@@ -1,0 +1,54 @@
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: sideska-app
+        restart: unless-stopped
+        ports:
+            - "8000:8000"
+            - "5173:5173"
+        volumes:
+            - .:/var/www/html
+        environment:
+            APP_ENV: local
+            APP_DEBUG: "true"
+            DB_CONNECTION: pgsql
+            DB_HOST: db
+            DB_PORT: 5432
+            DB_DATABASE: sideska
+            DB_USERNAME: sideska
+            DB_PASSWORD: sideska
+        depends_on:
+            db:
+                condition: service_healthy
+        networks:
+            - sideska
+
+    db:
+        image: postgres:18-alpine
+        container_name: sideska-db
+        restart: unless-stopped
+        ports:
+            - "5433:5432"
+        environment:
+            POSTGRES_DB: sideska
+            POSTGRES_USER: sideska
+            POSTGRES_PASSWORD: sideska
+        volumes:
+            - sideska-postgres:/var/lib/postgresql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U sideska -d sideska"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        networks:
+            - sideska
+
+networks:
+    sideska:
+        driver: bridge
+
+volumes:
+    sideska-postgres:
+        driver: local
