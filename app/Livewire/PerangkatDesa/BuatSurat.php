@@ -114,7 +114,7 @@ class BuatSurat extends Component
             . '-'
             . time()
             . '.pdf';
-        Storage::disk('public')->put(
+        Storage::disk('b2')->put(
             $filePath,
             $pdf->output()
         );

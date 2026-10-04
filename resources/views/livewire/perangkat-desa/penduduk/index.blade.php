@@ -82,7 +82,7 @@
                                     <div
                                         class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-700">
                                         @if ($item->foto)
-                                            <img src="{{ Storage::url($item->foto) }}" alt="{{ $item->nama }}"
+                                            <img src="{{ $item->foto }}" alt="{{ $item->nama }}"
                                                 class="h-full w-full object-cover">
                                         @else
                                             {{ strtoupper(substr($item->nama, 0, 1)) }}
@@ -159,7 +159,7 @@
                                     </a>
 
                                     {{-- EDIT --}}
-                                   <a href="{{ route('perangkat-desa.penduduk.edit', $item->id) }}"
+                                    <a href="{{ route('perangkat-desa.penduduk.edit', $item->id) }}"
                                         title="Edit penduduk"
                                         class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700">
 

@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 #[Layout('layouts.app')]
 class Create extends Component
@@ -262,10 +263,12 @@ class Create extends Component
             DB::transaction(function () use ($validated) {
                 $fotoPath = null;
                 if ($this->foto) {
-                    $fotoPath = $this->foto->store(
-                        'penduduk',
-                        'public'
-                    );
+                    $fotoPath = Cloudinary::upload(
+                        $this->foto->getRealPath(),
+                        [
+                            'folder' => 'sideska/penduduk',
+                        ]
+                    )->getSecurePath();
                 }
                 $user = User::create([
                     'name' => $this->nama,
