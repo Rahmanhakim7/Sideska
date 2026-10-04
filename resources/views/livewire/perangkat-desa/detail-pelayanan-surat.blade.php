@@ -599,7 +599,8 @@
                         </div>
                         <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
                             @if ($pengajuan->file_pdf)
-                                <a href="{{ asset('storage/' . $pengajuan->file_pdf) }}" target="_blank"
+                                <a href="{{ route('perangkat-desa.pelayanan-surat.pdf', $pengajuan) }}"
+                                    target="_blank" target="_blank"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-200 bg-white px-4 py-2.5 text-sm font-semibold text-purple-700 transition hover:border-purple-300 hover:bg-purple-50">
 
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -613,10 +614,8 @@
 
                                 </a>
 
-
-                                <a href="{{ asset('storage/' . $pengajuan->file_pdf) }}" download
+                                <a href="{{ route('perangkat-desa.pelayanan-surat.pdf.download', $pengajuan) }}"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-800">
-
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -752,7 +751,8 @@
                         @if ($pengajuan->file_pdf)
                             <div class="flex shrink-0 flex-col gap-2 sm:flex-row">
 
-                                <a href="{{ asset('storage/' . $pengajuan->file_pdf) }}" target="_blank"
+                                <a href="{{ route('perangkat-desa.pelayanan-surat.pdf', $pengajuan) }}"
+                                    target="_blank"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50">
 
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -767,7 +767,7 @@
                                 </a>
 
 
-                                <a href="{{ asset('storage/' . $pengajuan->file_pdf) }}" download
+                                <a href="{{ route('perangkat-desa.pelayanan-surat.pdf.download', $pengajuan) }}"
                                     class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
 
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

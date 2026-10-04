@@ -21,6 +21,7 @@ use App\Livewire\Masyarakat\AjukanSurat\Domisili;
 use App\Livewire\Masyarakat\AjukanSurat\Sktm;
 use App\Livewire\Masyarakat\RiwayatPengajuan;
 
+use App\Http\Controllers\Surat\SuratPdfController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -55,6 +56,19 @@ Route::get('/perangkat-desa/pelayanan-surat/{pengajuan}', DetailPelayananSurat::
 Route::get('/perangkat-desa/pelayanan-surat/{pengajuan}/buat', BuatSurat::class)
     ->middleware(['auth', 'verified', 'role:perangkat_desa'])
     ->name('perangkat-desa.pelayanan-surat.buat');
+Route::get(
+    '/perangkat-desa/pelayanan-surat/{pengajuan}/pdf',
+    [SuratPdfController::class, 'show']
+)
+    ->middleware(['auth', 'verified', 'role:perangkat_desa'])
+    ->name('perangkat-desa.pelayanan-surat.pdf');
+
+Route::get(
+    '/perangkat-desa/pelayanan-surat/{pengajuan}/pdf/download',
+    [SuratPdfController::class, 'download']
+)
+    ->middleware(['auth', 'verified', 'role:perangkat_desa'])
+    ->name('perangkat-desa.pelayanan-surat.pdf.download');
 
 
 Route::get('/kepala-desa/dashboard', KepalaDesaDashboard::class)
