@@ -180,7 +180,7 @@
                                 <div class="flex flex-wrap items-center gap-3">
 
                                     {{-- Lihat Surat --}}
-                                    <a href="{{ Storage::url($item->file_pdf) }}" target="_blank"
+                                    <a href="{{ route('perangkat-desa.pelayanan-surat.pdf', $item) }}" target="_blank"
                                         class="inline-flex items-center gap-2 rounded-xl bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
@@ -193,7 +193,7 @@
                                     </a>
 
                                     {{-- Download Surat --}}
-                                    <a href="{{ Storage::url($item->file_pdf) }}" download
+                                    <a href="{{ route('perangkat-desa.pelayanan-surat.pdf.download', $item) }}" download
                                         class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">

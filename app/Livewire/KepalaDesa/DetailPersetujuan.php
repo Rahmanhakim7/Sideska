@@ -14,6 +14,7 @@ use Livewire\Component;
 class DetailPersetujuan extends Component
 {
     public PengajuanSurat $pengajuan;
+
     public bool $showModalTandaTangan = false;
 
     public function mount(PengajuanSurat $pengajuan): void
@@ -39,10 +40,10 @@ class DetailPersetujuan extends Component
         }
         $this->pengajuan->load('penduduk');
         $oldFilePath = $this->pengajuan->file_pdf;
-        $filePath = 'surat/domisili-' .
-            $this->pengajuan->id .
-            '-ttd-' .
-            time() .
+        $filePath = 'surat/domisili-'.
+            $this->pengajuan->id.
+            '-ttd-'.
+            time().
             '.pdf';
         $pdf = Pdf::loadView('surat.domisili', [
             'pengajuan' => $this->pengajuan,
@@ -52,7 +53,7 @@ class DetailPersetujuan extends Component
         $pdf->setPaper('a4', 'portrait');
 
         // Simpan PDF baru
-        Storage::disk('public')->put(
+        Storage::disk('b2')->put(
             $filePath,
             $pdf->output()
         );
@@ -71,7 +72,7 @@ class DetailPersetujuan extends Component
 
             // Kalau update database gagal,
             // hapus PDF baru supaya tidak meninggalkan file sampah
-            Storage::disk('public')->delete($filePath);
+            Storage::disk('b2')->delete($filePath);
 
             throw $e;
         }
@@ -80,9 +81,9 @@ class DetailPersetujuan extends Component
         if (
             $oldFilePath &&
             $oldFilePath !== $filePath &&
-            Storage::disk('public')->exists($oldFilePath)
+            Storage::disk('b2')->exists($oldFilePath)
         ) {
-            Storage::disk('public')->delete($oldFilePath);
+            Storage::disk('b2')->delete($oldFilePath);
         }
 
         $this->pengajuan->refresh();

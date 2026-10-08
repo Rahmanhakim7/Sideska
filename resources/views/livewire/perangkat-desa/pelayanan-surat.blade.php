@@ -121,12 +121,8 @@
 
                                         $statusClass = match ($status) {
                                             'diajukan' => 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200',
-                                            'diverifikasi'
-                                                => 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200',
                                             'revisi'
                                                 => 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200',
-                                            'disetujui'
-                                                => 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200',
                                             'ditolak' => 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
                                             'menunggu_tanda_tangan'
                                                 => 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200',

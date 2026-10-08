@@ -133,7 +133,7 @@
 
             @if ($pengajuan->file_pdf)
                 <div class="overflow-hidden rounded-xl border border-slate-200">
-                    <iframe src="{{ Storage::url($pengajuan->file_pdf) }}" class="h-[700px] w-full">
+                    <iframe src="{{ route('perangkat-desa.pelayanan-surat.pdf', $pengajuan) }}" class="h-[700px] w-full">
                     </iframe>
                 </div>
             @else
