@@ -38,16 +38,29 @@ class DetailPersetujuan extends Component
         ) {
             return;
         }
-        $this->pengajuan->load('penduduk');
+        $this->pengajuan->load(['penduduk', 'data']);
         $oldFilePath = $this->pengajuan->file_pdf;
-        $filePath = 'surat/domisili-'.
+        $template = match ($this->pengajuan->jenis_surat) {
+            'domisili' => 'surat.domisili',
+            'sktm' => 'surat.sktm',
+            'usaha' => 'surat.usaha',
+            default => null,
+        };
+        abort_unless($template, 404);
+        $dataSktm = $this->pengajuan
+            ->data
+            ->pluck('value', 'field');
+        $filePath = 'surat/'.
+            $this->pengajuan->jenis_surat.
+            '-'.
             $this->pengajuan->id.
             '-ttd-'.
             time().
             '.pdf';
-        $pdf = Pdf::loadView('surat.domisili', [
+        $pdf = Pdf::loadView($template, [
             'pengajuan' => $this->pengajuan,
             'sudahDitandatangani' => true,
+            'dataSktm' => $dataSktm,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

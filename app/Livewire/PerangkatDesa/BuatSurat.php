@@ -14,7 +14,9 @@ use Livewire\Component;
 class BuatSurat extends Component
 {
     public PengajuanSurat $pengajuan;
+
     public array $fields = [];
+
     public array $data = [];
 
     public function mount(PengajuanSurat $pengajuan): void
@@ -65,6 +67,20 @@ class BuatSurat extends Component
                     'required' => true,
                 ],
             ],
+            'usaha' => [
+                [
+                    'name' => 'nomor_surat',
+                    'label' => 'Nomor Surat',
+                    'type' => 'text',
+                    'required' => true,
+                ],
+                [
+                    'name' => 'tanggal_surat',
+                    'label' => 'Tanggal Surat',
+                    'type' => 'date',
+                    'required' => true,
+                ],
+            ],
             default => [],
         };
     }
@@ -93,6 +109,7 @@ class BuatSurat extends Component
         $template = match ($this->pengajuan->jenis_surat) {
             'domisili' => 'surat.domisili',
             'sktm' => 'surat.sktm',
+            'usaha' => 'surat.usaha',
             default => null,
         };
         abort_unless($template, 404);
@@ -108,12 +125,12 @@ class BuatSurat extends Component
         );
         $pdf->setPaper('a4', 'portrait');
         $filePath = 'surat/'
-            . $this->pengajuan->jenis_surat
-            . '-'
-            . $this->pengajuan->id
-            . '-'
-            . time()
-            . '.pdf';
+            .$this->pengajuan->jenis_surat
+            .'-'
+            .$this->pengajuan->id
+            .'-'
+            .time()
+            .'.pdf';
         Storage::disk('b2')->put(
             $filePath,
             $pdf->output()

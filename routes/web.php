@@ -8,6 +8,7 @@ use App\Livewire\KepalaDesa\Persetujuan;
 use App\Livewire\Masyarakat\AjukanSurat;
 use App\Livewire\Masyarakat\AjukanSurat\Domisili;
 use App\Livewire\Masyarakat\AjukanSurat\Sktm;
+use App\Livewire\Masyarakat\AjukanSurat\Usaha;
 use App\Livewire\Masyarakat\Dashboard as MasyarakatDashboard;
 use App\Livewire\Masyarakat\RiwayatPengajuan;
 use App\Livewire\PerangkatDesa\BuatSurat;
@@ -84,8 +85,10 @@ Route::middleware(['auth', 'role:masyarakat'])->group(function () {
         ->name('masyarakat.surat.create');
     Route::get('/masyarakat/ajukan-surat/domisili/{pengajuan?}', Domisili::class)
         ->name('masyarakat.ajukan-surat.domisili');
-    Route::get('/masyarakat/ajukan-surat/sktm', Sktm::class)
+    Route::get('/masyarakat/ajukan-surat/sktm/{pengajuan?}', Sktm::class)
         ->name('masyarakat.ajukan-surat.sktm');
+    Route::get('/masyarakat/ajukan-surat/usaha/{pengajuan?}', Usaha::class)
+        ->name('masyarakat.ajukan-surat.usaha');
     Route::get('/masyarakat/riwayat-pengajuan', RiwayatPengajuan::class)
         ->name('masyarakat.surat.riwayat');
 });

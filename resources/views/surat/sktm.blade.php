@@ -154,7 +154,7 @@
     </div>
     <div class="judul">
         <div class="nama-surat">
-            SURAT KETERANGAN DOMISILI
+            SURAT KETERANGAN TIDAK MAMPU
         </div>
         <div class="nomor">
             Nomor: {{ $pengajuan->nomor_surat ?? '-' }}

@@ -374,6 +374,136 @@
                     </div>
 
                 </div>
+            @elseif ($pengajuan->jenis_surat === 'usaha')
+                @php
+                    $dataUsaha = $pengajuan->data->pluck('value', 'field');
+                @endphp
+                <div class="space-y-6">
+
+                    {{-- INFO --}}
+                    <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-5 py-4">
+                        <div class="flex items-start gap-3">
+
+                            <div
+                                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-semibold text-blue-900">
+                                    Data Usaha
+                                </p>
+
+                                <p class="mt-1 text-sm leading-6 text-blue-700">
+                                    Data usaha yang akan dicantumkan pada
+                                    Surat Keterangan Usaha.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {{-- DATA USAHA --}}
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+                        <div class="rounded-2xl border border-slate-200 bg-white md:col-span-2">
+
+                            <div class="border-b border-slate-100 px-5 py-4">
+                                <div class="flex items-center gap-3">
+
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 3h18v18H3V3zm2 3v12m5-9h6m-6 4h6" />
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-slate-800">
+                                            Informasi Usaha
+                                        </h3>
+
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            Usaha milik pemohon pengajuan surat.
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-5 px-5 py-5 sm:grid-cols-2">
+
+                                {{-- Nama Usaha --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Nama Usaha
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataUsaha['nama_usaha'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Jenis Usaha --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Jenis Usaha
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataUsaha['jenis_usaha'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Alamat Usaha --}}
+                                <div class="sm:col-span-2">
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Alamat Usaha
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                                        {{ $dataUsaha['alamat_usaha'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Lama Usaha --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Lama Usaha
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataUsaha['lama_usaha'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Modal Usaha --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Modal Usaha
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataUsaha['modal_usaha'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
             @endif
         </div>
     </div>
