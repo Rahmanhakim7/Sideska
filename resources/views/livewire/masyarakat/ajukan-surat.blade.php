@@ -183,6 +183,52 @@
 
             </div>
 
+            <div
+                class="flex min-h-[260px] flex-col rounded-2xl border
+                       border-slate-200 bg-white shadow-sm
+                       transition hover:-translate-y-0.5 hover:shadow-md">
+
+                <div class="flex-1 p-6">
+
+                    <div
+                        class="flex h-12 w-12 items-center justify-center
+                               rounded-xl bg-blue-50 text-blue-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                        </svg>
+                    </div>
+
+                    <h2 class="mt-5 text-base font-bold text-slate-800">
+                        Surat Pengantar SKCK
+                    </h2>
+
+                    <p class="mt-2 text-sm leading-6 text-slate-500">
+                        Surat pengantar dari desa sebagai persyaratan pembuatan
+                        Surat Keterangan Catatan Kepolisian (SKCK).
+                    </p>
+
+                </div>
+
+                <div class="border-t border-slate-100 p-5">
+                    <a href="{{ route('masyarakat.ajukan-surat.skck') }}" wire:navigate
+                        class="flex w-full items-center justify-center gap-2
+                               rounded-xl bg-blue-900 px-4 py-2.5
+                               text-sm font-semibold text-white
+                               transition hover:bg-blue-800
+                               active:bg-blue-950
+                               focus:outline-none focus:ring-2
+                               focus:ring-blue-600 focus:ring-offset-2">
+                        Ajukan Surat
+
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                </div>
+
+            </div>
+
         </div>
     </main>
 </div>

@@ -28,6 +28,10 @@ class RiwayatPengajuan extends Component
                 'pengajuan' => $pengajuan->id,
             ]),
 
+            'skck' => route('masyarakat.ajukan-surat.skck', [
+                'pengajuan' => $pengajuan->id,
+            ]),
+
             default => '#',
         };
     }

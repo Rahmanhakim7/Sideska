@@ -6,6 +6,7 @@ use App\Enums\PengajuanSuratStatus;
 use App\Models\Penduduk;
 use App\Models\PengajuanSurat;
 use App\Models\PengajuanSuratData;
+use App\Services\PengajuanStatusService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -194,6 +195,8 @@ class Usaha extends Component
         $this->validate();
         if ($this->modeRevisi) {
             abort_unless($this->pengajuan, 404);
+            $asal = $this->pengajuan->status;
+
             DB::transaction(function () {
                 $this->penduduk->update([
                     'nik' => $this->nik,
@@ -207,11 +210,14 @@ class Usaha extends Component
                     'rw' => $this->rw,
                     'dusun' => $this->dusun,
                 ]);
-                $this->pengajuan->update([
-                    'keperluan' => $this->keperluan,
-                    'status' => PengajuanSuratStatus::DIAJUKAN,
-                    'catatan' => null,
-                ]);
+                $this->pengajuan->keperluan = $this->keperluan;
+                $this->pengajuan->catatan = null;
+
+                app(PengajuanStatusService::class)->apply(
+                    $this->pengajuan,
+                    PengajuanSuratStatus::DIAJUKAN,
+                    Auth::user(),
+                );
                 PengajuanSuratData::updateOrCreate(
                     [
                         'pengajuan_surat_id' => $this->pengajuan->id,
@@ -258,6 +264,13 @@ class Usaha extends Component
                     ]
                 );
             });
+
+            app(PengajuanStatusService::class)->kirimNotifikasi(
+                $this->pengajuan,
+                $asal,
+                PengajuanSuratStatus::DIAJUKAN,
+            );
+
             session()->flash(
                 'success',
                 'Perbaikan pengajuan berhasil dikirim kembali.'
@@ -269,13 +282,18 @@ class Usaha extends Component
 
             return;
         }
-        DB::transaction(function () {
+        $service = app(PengajuanStatusService::class);
+        $pengajuan = null;
+
+        DB::transaction(function () use ($service, &$pengajuan) {
             $pengajuan = PengajuanSurat::create([
                 'penduduk_id' => $this->penduduk->id,
                 'jenis_surat' => 'usaha',
                 'keperluan' => $this->keperluan,
                 'status' => PengajuanSuratStatus::DIAJUKAN->value,
             ]);
+
+            $service->awali($pengajuan, Auth::user());
             PengajuanSuratData::create([
                 'pengajuan_surat_id' => $pengajuan->id,
                 'field' => 'nama_usaha',
@@ -302,6 +320,13 @@ class Usaha extends Component
                 'value' => $this->modalUsaha,
             ]);
         });
+
+        $service->kirimNotifikasi(
+            $pengajuan,
+            null,
+            PengajuanSuratStatus::DIAJUKAN,
+        );
+
         session()->flash(
             'success',
             'Pengajuan Surat Keterangan Usaha berhasil diajukan.'

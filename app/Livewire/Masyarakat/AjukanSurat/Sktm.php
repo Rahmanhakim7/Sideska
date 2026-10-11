@@ -3,9 +3,10 @@
 namespace App\Livewire\Masyarakat\AjukanSurat;
 
 use App\Enums\PengajuanSuratStatus;
+use App\Models\Penduduk;
 use App\Models\PengajuanSurat;
 use App\Models\PengajuanSuratData;
-use App\Models\Penduduk;
+use App\Services\PengajuanStatusService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -15,23 +16,41 @@ use Livewire\Component;
 class Sktm extends Component
 {
     public Penduduk $penduduk;
+
     public string $keperluan = '';
+
     public ?PengajuanSurat $pengajuan = null;
+
     public bool $modeRevisi = false;
+
     public string $nik = '';
+
     public string $no_kk = '';
+
     public string $nama = '';
+
     public string $tempat_lahir = '';
+
     public string $tanggal_lahir = '';
+
     public string $jenis_kelamin = '';
+
     public string $alamat = '';
+
     public string $rt = '';
+
     public string $rw = '';
+
     public string $dusun = '';
+
     public string $pekerjaanAyah = '';
+
     public string $penghasilanAyah = '';
+
     public string $pekerjaanIbu = '';
+
     public string $penghasilanIbu = '';
+
     public function mount(?PengajuanSurat $pengajuan = null): void
     {
         $penduduk = Auth::user()?->penduduk;
@@ -78,6 +97,7 @@ class Sktm extends Component
             $this->penghasilanIbu = $dataSktm['penghasilan_ibu'] ?? '';
         }
     }
+
     protected function rules(): array
     {
         return [
@@ -152,6 +172,7 @@ class Sktm extends Component
             ],
         ];
     }
+
     public function ajukan(): void
     {
         $this->validate();
@@ -160,6 +181,8 @@ class Sktm extends Component
         // ==================================================
         if ($this->modeRevisi) {
             abort_unless($this->pengajuan, 404);
+            $asal = $this->pengajuan->status;
+
             DB::transaction(function () {
                 $this->penduduk->update([
                     'nik' => $this->nik,
@@ -176,11 +199,14 @@ class Sktm extends Component
                 // ------------------------------------------
                 // Update pengajuan surat
                 // ------------------------------------------
-                $this->pengajuan->update([
-                    'keperluan' => $this->keperluan,
-                    'status' => PengajuanSuratStatus::DIAJUKAN,
-                    'catatan' => null,
-                ]);
+                $this->pengajuan->keperluan = $this->keperluan;
+                $this->pengajuan->catatan = null;
+
+                app(PengajuanStatusService::class)->apply(
+                    $this->pengajuan,
+                    PengajuanSuratStatus::DIAJUKAN,
+                    Auth::user(),
+                );
                 // ------------------------------------------
                 // Update data tambahan SKTM
                 // ------------------------------------------
@@ -221,6 +247,13 @@ class Sktm extends Component
                     ]
                 );
             });
+
+            app(PengajuanStatusService::class)->kirimNotifikasi(
+                $this->pengajuan,
+                $asal,
+                PengajuanSuratStatus::DIAJUKAN,
+            );
+
             session()->flash(
                 'success',
                 'Perbaikan pengajuan berhasil dikirim kembali.'
@@ -229,12 +262,16 @@ class Sktm extends Component
                 'masyarakat.surat.riwayat',
                 navigate: true
             );
+
             return;
         }
         // ==================================================
         // PENGAJUAN BARU
         // ==================================================
-        DB::transaction(function () {
+        $service = app(PengajuanStatusService::class);
+        $pengajuan = null;
+
+        DB::transaction(function () use ($service, &$pengajuan) {
             // ------------------------------------------
             // Simpan pengajuan utama
             // ------------------------------------------
@@ -244,6 +281,8 @@ class Sktm extends Component
                 'keperluan' => $this->keperluan,
                 'status' => PengajuanSuratStatus::DIAJUKAN->value,
             ]);
+
+            $service->awali($pengajuan, Auth::user());
             // ------------------------------------------
             // Simpan data tambahan SKTM
             // ------------------------------------------
@@ -268,6 +307,13 @@ class Sktm extends Component
                 'value' => $this->penghasilanIbu,
             ]);
         });
+
+        $service->kirimNotifikasi(
+            $pengajuan,
+            null,
+            PengajuanSuratStatus::DIAJUKAN,
+        );
+
         session()->flash(
             'success',
             'Pengajuan Surat Keterangan Tidak Mampu berhasil diajukan.'
@@ -277,6 +323,7 @@ class Sktm extends Component
             navigate: true
         );
     }
+
     public function render()
     {
         return view('livewire.masyarakat.ajukan-surat.sktm');

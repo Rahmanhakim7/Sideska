@@ -407,8 +407,9 @@ class PendudukSeeder extends Seeder
                 'name' => $data['nama'],
                 'email' => $data['email'],
                 'password' => 'password',
-                'role' => 'masyarakat',
             ]);
+            $user->role = 'masyarakat';
+            $user->save();
 
             Penduduk::create([
                 'user_id' => $user->id,

@@ -32,8 +32,8 @@ new class extends Component {
                         SIDESKA
                     </div>
 
-                    <div class="text-[10px] text-slate-400">
-                        Sistem Informasi Desa
+                    <div class="text-[10px] leading-tight text-slate-400">
+                        Sistem Informasi Desa Sekartejo
                     </div>
                 </div>
             </a>

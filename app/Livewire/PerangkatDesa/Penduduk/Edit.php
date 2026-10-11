@@ -3,8 +3,8 @@
 namespace App\Livewire\PerangkatDesa\Penduduk;
 
 use App\Models\Penduduk;
+use App\Services\PendudukFotoService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -14,34 +14,63 @@ use Livewire\WithFileUploads;
 class Edit extends Component
 {
     use WithFileUploads;
+
     public Penduduk $penduduk;
+
     public $email;
+
     public $password;
+
     public $password_confirmation;
+
     public $foto;
+
     public $foto_lama;
+
     public $nik;
+
     public $no_kk;
+
     public $nama;
+
     public $tempat_lahir;
+
     public $tanggal_lahir;
+
     public $jenis_kelamin;
+
     public $agama;
+
     public $status_perkawinan;
+
     public $pendidikan;
+
     public $pekerjaan;
+
     public $status_hubungan_keluarga;
+
     public $golongan_darah;
+
     public $alamat;
+
     public $rt;
+
     public $rw;
+
     public $dusun;
+
     public $kewarganegaraan;
+
     public $no_hp;
+
     public $status_kependudukan;
+
     public $disabilitas;
+
     public $nama_ayah;
+
     public $nama_ibu;
+
     public function mount(Penduduk $penduduk): void
     {
         $this->penduduk = $penduduk->load('user');
@@ -74,6 +103,7 @@ class Edit extends Component
         $this->nama_ayah = $this->penduduk->nama_ayah;
         $this->nama_ibu = $this->penduduk->nama_ibu;
     }
+
     protected function rules(): array
     {
         return [
@@ -304,8 +334,17 @@ class Edit extends Component
     public function update()
     {
         $validated = $this->validate();
+        $fotoLama = $this->penduduk->foto;
+        $fotoBaru = null;
+
         try {
-            DB::transaction(function () use ($validated) {
+            if ($this->foto) {
+                $fotoBaru = app(PendudukFotoService::class)->upload(
+                    $this->foto->getRealPath()
+                );
+            }
+
+            DB::transaction(function () use ($fotoBaru) {
                 $user = $this->penduduk->user;
                 if ($user) {
                     $user->name = $this->nama;
@@ -315,21 +354,8 @@ class Edit extends Component
                     }
                     $user->save();
                 }
-                $fotoPath = $this->penduduk->foto;
-                if ($this->foto) {
-                    if (
-                        $fotoPath &&
-                        Storage::disk('public')->exists($fotoPath)
-                    ) {
-                        Storage::disk('public')->delete($fotoPath);
-                    }
-                    $fotoPath = $this->foto->store(
-                        'penduduk',
-                        'public'
-                    );
-                }
                 $this->penduduk->update([
-                    'foto' => $fotoPath,
+                    'foto' => $fotoBaru ?? $fotoLama,
                     'nik' => $this->nik,
                     'no_kk' => $this->no_kk,
                     'nama' => $this->nama,
@@ -354,19 +380,26 @@ class Edit extends Component
                     'nama_ibu' => $this->nama_ibu,
                 ]);
             });
-
-            session()->flash('success', 'Data penduduk berhasil diperbarui.');
-            $this->dispatch('update-success');
         } catch (\Throwable $e) {
+            if ($fotoBaru !== null) {
+                app(PendudukFotoService::class)->hapus($fotoBaru);
+            }
             report($e);
             session()->flash(
                 'error',
                 'Data penduduk gagal diperbarui. Silakan coba lagi.'
             );
+
             return null;
         }
-    }
 
+        if ($fotoBaru !== null && $fotoLama !== $fotoBaru) {
+            app(PendudukFotoService::class)->hapus($fotoLama);
+        }
+
+        session()->flash('success', 'Data penduduk berhasil diperbarui.');
+        $this->dispatch('update-success');
+    }
 
     public function render()
     {

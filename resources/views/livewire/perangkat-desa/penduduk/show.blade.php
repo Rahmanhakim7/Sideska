@@ -49,8 +49,8 @@
                 <div
                     class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-3xl font-bold text-blue-700 ring-4 ring-blue-50">
 
-                    @if ($penduduk->foto)
-                        <img src="{{ Storage::url($penduduk->foto) }}" alt="{{ $penduduk->nama }}"
+                    @if ($penduduk->foto_url)
+                        <img src="{{ $penduduk->foto_url }}" alt="{{ $penduduk->nama }}"
                             class="h-full w-full object-cover">
                     @else
                         {{ strtoupper(substr($penduduk->nama, 0, 1)) }}

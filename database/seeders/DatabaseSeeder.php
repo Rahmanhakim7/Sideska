@@ -9,33 +9,37 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::create([
+        $admin = User::create([
             'name' => 'Administrator',
             'email' => 'admin@sideska.test',
             'password' => 'password',
-            'role' => 'admin',
         ]);
+        $admin->role = 'admin';
+        $admin->save();
 
-        User::create([
+        $perangkat = User::create([
             'name' => 'Perangkat Desa',
             'email' => 'perangkat@sideska.test',
             'password' => 'password',
-            'role' => 'perangkat_desa',
         ]);
+        $perangkat->role = 'perangkat_desa';
+        $perangkat->save();
 
-        User::create([
+        $kepala = User::create([
             'name' => 'Kepala Desa',
             'email' => 'kepala@sideska.test',
             'password' => 'password',
-            'role' => 'kepala_desa',
         ]);
+        $kepala->role = 'kepala_desa';
+        $kepala->save();
 
-        User::create([
+        $masyarakat = User::create([
             'name' => 'Masyarakat',
             'email' => 'masyarakat@sideska.test',
             'password' => 'password',
-            'role' => 'masyarakat',
         ]);
+        $masyarakat->role = 'masyarakat';
+        $masyarakat->save();
 
         $this->call(PendudukSeeder::class);
         $this->call(PengajuanSuratSeeder::class);

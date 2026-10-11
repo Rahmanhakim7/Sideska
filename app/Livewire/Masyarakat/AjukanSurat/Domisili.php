@@ -3,8 +3,9 @@
 namespace App\Livewire\Masyarakat\AjukanSurat;
 
 use App\Enums\PengajuanSuratStatus;
-use App\Models\PengajuanSurat;
 use App\Models\Penduduk;
+use App\Models\PengajuanSurat;
+use App\Services\PengajuanStatusService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -14,18 +15,31 @@ use Livewire\Component;
 class Domisili extends Component
 {
     public Penduduk $penduduk;
+
     public string $keperluan = '';
+
     public ?PengajuanSurat $pengajuan = null;
+
     public bool $modeRevisi = false;
+
     public string $nik = '';
+
     public string $no_kk = '';
+
     public string $nama = '';
+
     public string $tempat_lahir = '';
+
     public string $tanggal_lahir = '';
+
     public string $jenis_kelamin = '';
+
     public string $alamat = '';
+
     public string $rt = '';
+
     public string $rw = '';
+
     public string $dusun = '';
 
     public function mount(?PengajuanSurat $pengajuan = null): void
@@ -132,6 +146,8 @@ class Domisili extends Component
         $this->validate();
         if ($this->modeRevisi) {
             abort_unless($this->pengajuan, 404);
+            $asal = $this->pengajuan->status;
+
             DB::transaction(function () {
                 $this->penduduk->update([
                     'nik' => $this->nik,
@@ -145,12 +161,23 @@ class Domisili extends Component
                     'rw' => $this->rw,
                     'dusun' => $this->dusun,
                 ]);
-                $this->pengajuan->update([
-                    'keperluan' => $this->keperluan,
-                    'status' => PengajuanSuratStatus::DIAJUKAN,
-                    'catatan' => null,
-                ]);
+
+                $this->pengajuan->keperluan = $this->keperluan;
+                $this->pengajuan->catatan = null;
+
+                app(PengajuanStatusService::class)->apply(
+                    $this->pengajuan,
+                    PengajuanSuratStatus::DIAJUKAN,
+                    Auth::user(),
+                );
             });
+
+            app(PengajuanStatusService::class)->kirimNotifikasi(
+                $this->pengajuan,
+                $asal,
+                PengajuanSuratStatus::DIAJUKAN,
+            );
+
             session()->flash(
                 'success',
                 'Perbaikan pengajuan berhasil dikirim kembali.'
@@ -159,14 +186,28 @@ class Domisili extends Component
                 'masyarakat.surat.riwayat',
                 navigate: true
             );
+
             return;
         }
-        PengajuanSurat::create([
-            'penduduk_id' => $this->penduduk->id,
-            'jenis_surat' => 'domisili',
-            'keperluan' => $this->keperluan,
-            'status' => PengajuanSuratStatus::DIAJUKAN->value,
-        ]);
+        $service = app(PengajuanStatusService::class);
+        $pengajuan = null;
+
+        DB::transaction(function () use ($service, &$pengajuan) {
+            $pengajuan = PengajuanSurat::create([
+                'penduduk_id' => $this->penduduk->id,
+                'jenis_surat' => 'domisili',
+                'keperluan' => $this->keperluan,
+                'status' => PengajuanSuratStatus::DIAJUKAN->value,
+            ]);
+
+            $service->awali($pengajuan, Auth::user());
+        });
+
+        $service->kirimNotifikasi(
+            $pengajuan,
+            null,
+            PengajuanSuratStatus::DIAJUKAN,
+        );
         session()->flash(
             'success',
             'Pengajuan Surat Keterangan Domisili berhasil diajukan.'

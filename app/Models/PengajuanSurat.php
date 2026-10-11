@@ -3,12 +3,15 @@
 namespace App\Models;
 
 use App\Enums\PengajuanSuratStatus;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PengajuanSurat extends Model
 {
+    use HasFactory;
+
     protected $table = 'pengajuan_surat';
 
     protected $fillable = [
@@ -40,5 +43,10 @@ class PengajuanSurat extends Model
     public function data(): HasMany
     {
         return $this->hasMany(PengajuanSuratData::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(PengajuanStatusHistory::class)->latest();
     }
 }

@@ -5,7 +5,7 @@
         </h1>
 
         <p class="mt-1 text-sm text-slate-500">
-            Selamat datang di Sistem Informasi Desa SIDESKA.
+            Selamat datang di SIDESKA — Sistem Informasi Desa Sekartejo.
         </p>
     </div>
 

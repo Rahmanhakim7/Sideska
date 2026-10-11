@@ -7,10 +7,13 @@ use App\Livewire\KepalaDesa\DetailPersetujuan;
 use App\Livewire\KepalaDesa\Persetujuan;
 use App\Livewire\Masyarakat\AjukanSurat;
 use App\Livewire\Masyarakat\AjukanSurat\Domisili;
+use App\Livewire\Masyarakat\AjukanSurat\Skck;
 use App\Livewire\Masyarakat\AjukanSurat\Sktm;
 use App\Livewire\Masyarakat\AjukanSurat\Usaha;
 use App\Livewire\Masyarakat\Dashboard as MasyarakatDashboard;
+use App\Livewire\Masyarakat\DetailPengajuan;
 use App\Livewire\Masyarakat\RiwayatPengajuan;
+use App\Livewire\Notifikasi;
 use App\Livewire\PerangkatDesa\BuatSurat;
 use App\Livewire\PerangkatDesa\Dashboard as PerangkatDesaDashboard;
 use App\Livewire\PerangkatDesa\DetailPelayananSurat;
@@ -89,9 +92,17 @@ Route::middleware(['auth', 'role:masyarakat'])->group(function () {
         ->name('masyarakat.ajukan-surat.sktm');
     Route::get('/masyarakat/ajukan-surat/usaha/{pengajuan?}', Usaha::class)
         ->name('masyarakat.ajukan-surat.usaha');
+    Route::get('/masyarakat/ajukan-surat/skck/{pengajuan?}', Skck::class)
+        ->name('masyarakat.ajukan-surat.skck');
     Route::get('/masyarakat/riwayat-pengajuan', RiwayatPengajuan::class)
         ->name('masyarakat.surat.riwayat');
+    Route::get('/masyarakat/detail-pengajuan/{pengajuan}', DetailPengajuan::class)
+        ->name('masyarakat.surat.detail');
 });
+
+Route::get('/notifikasi', Notifikasi::class)
+    ->middleware(['auth'])
+    ->name('notifikasi');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])

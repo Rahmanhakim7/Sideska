@@ -4,12 +4,12 @@ namespace App\Livewire\PerangkatDesa\Penduduk;
 
 use App\Models\Penduduk;
 use App\Models\User;
+use App\Services\PendudukFotoService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 #[Layout('layouts.app')]
 class Create extends Component
@@ -17,30 +17,55 @@ class Create extends Component
     use WithFileUploads;
 
     public $foto;
+
     public $email;
+
     public $password;
+
     public $password_confirmation;
+
     public $nik;
+
     public $no_kk;
+
     public $nama;
+
     public $tempat_lahir;
+
     public $tanggal_lahir;
+
     public $jenis_kelamin;
+
     public $agama;
+
     public $status_perkawinan;
+
     public $pendidikan;
+
     public $pekerjaan;
+
     public $status_hubungan_keluarga;
+
     public $golongan_darah;
+
     public $alamat;
+
     public $rt;
+
     public $rw;
+
     public $dusun;
+
     public $kewarganegaraan;
+
     public $no_hp;
+
     public $status_kependudukan;
+
     public $disabilitas;
+
     public $nama_ayah;
+
     public $nama_ibu;
 
     protected function rules(): array
@@ -225,6 +250,7 @@ class Create extends Component
             ],
         ];
     }
+
     protected function validationAttributes(): array
     {
         return [
@@ -256,26 +282,27 @@ class Create extends Component
             'nama_ibu' => 'nama ibu',
         ];
     }
+
     public function simpan()
     {
         $validated = $this->validate();
+        $fotoPath = null;
+
         try {
-            DB::transaction(function () use ($validated) {
-                $fotoPath = null;
-                if ($this->foto) {
-                    $fotoPath = Cloudinary::upload(
-                        $this->foto->getRealPath(),
-                        [
-                            'folder' => 'sideska/penduduk',
-                        ]
-                    )->getSecurePath();
-                }
+            if ($this->foto) {
+                $fotoPath = app(PendudukFotoService::class)->upload(
+                    $this->foto->getRealPath()
+                );
+            }
+
+            DB::transaction(function () use ($fotoPath) {
                 $user = User::create([
                     'name' => $this->nama,
                     'email' => $this->email,
                     'password' => $this->password,
-                    'role' => 'masyarakat',
                 ]);
+                $user->role = 'masyarakat';
+                $user->save();
                 Penduduk::create([
                     'user_id' => $user->id,
                     'foto' => $fotoPath,
@@ -313,6 +340,9 @@ class Create extends Component
                 navigate: true
             );
         } catch (\Throwable $e) {
+            if ($fotoPath !== null) {
+                app(PendudukFotoService::class)->hapus($fotoPath);
+            }
             report($e);
             session()->flash(
                 'error',

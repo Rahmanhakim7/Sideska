@@ -46,7 +46,7 @@ new #[Layout('layouts.guest')] class extends Component {
         </h1>
 
         <p class="mt-2 text-sm text-slate-500">
-            Sistem Informasi Desa
+            Sistem Informasi Desa Sekartejo
         </p>
 
         <p class="mt-1 text-xs text-slate-400 max-w-xs">

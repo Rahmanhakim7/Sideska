@@ -4,9 +4,14 @@ namespace App\Livewire\PerangkatDesa;
 
 use App\Enums\PengajuanSuratStatus;
 use App\Models\PengajuanSurat;
+use App\Services\NomorSuratService;
+use App\Services\PengajuanStatusService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -14,6 +19,10 @@ use Livewire\Component;
 class BuatSurat extends Component
 {
     public PengajuanSurat $pengajuan;
+
+    public string $modePenomoran = 'manual';
+
+    public string $nomorManualTersimpan = '';
 
     public array $fields = [];
 
@@ -81,71 +90,192 @@ class BuatSurat extends Component
                     'required' => true,
                 ],
             ],
+            'skck' => [
+                [
+                    'name' => 'nomor_surat',
+                    'label' => 'Nomor Surat',
+                    'type' => 'text',
+                    'required' => true,
+                ],
+                [
+                    'name' => 'tanggal_surat',
+                    'label' => 'Tanggal Surat',
+                    'type' => 'date',
+                    'required' => true,
+                ],
+            ],
             default => [],
         };
+    }
+
+    public function updatedModePenomoran(): void
+    {
+        if ($this->modePenomoran === 'otomatis') {
+            $this->nomorManualTersimpan = $this->data['nomor_surat'] ?? '';
+            $this->perbaruiPratinjauOtomatis();
+
+            return;
+        }
+
+        $this->data['nomor_surat'] = $this->nomorManualTersimpan !== ''
+            ? $this->nomorManualTersimpan
+            : $this->pengajuan->nomor_surat;
+    }
+
+    public function updatedDataTanggalSurat(): void
+    {
+        if ($this->modePenomoran === 'otomatis') {
+            $this->perbaruiPratinjauOtomatis();
+        }
+    }
+
+    protected function perbaruiPratinjauOtomatis(): void
+    {
+        $tahun = $this->tahunTanggalSurat();
+
+        $this->data['nomor_surat'] = $tahun !== null
+            ? app(NomorSuratService::class)->pratinjau($tahun)
+            : '';
+    }
+
+    protected function tahunTanggalSurat(): ?int
+    {
+        if (blank($this->data['tanggal_surat'] ?? null)) {
+            return null;
+        }
+
+        return (int) Carbon::parse($this->data['tanggal_surat'])->format('Y');
+    }
+
+    public function nilaiField(string $namaField): string
+    {
+        $nilai = $this->data[$namaField] ?? null;
+
+        if (blank($nilai)) {
+            return '';
+        }
+
+        if ($namaField === 'tanggal_surat') {
+            return Carbon::parse($nilai)->format('Y-m-d');
+        }
+
+        return (string) $nilai;
     }
 
     public function simpan(): void
     {
         $this->validate([
-            'data.nomor_surat' => [
+            'modePenomoran' => [
                 'required',
-                'string',
-                'max:255',
+                'in:manual,otomatis',
             ],
 
             'data.tanggal_surat' => [
                 'required',
                 'date',
             ],
+
+            'data.nomor_surat' => $this->modePenomoran === 'manual' ? [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('pengajuan_surat', 'nomor_surat')
+                    ->ignore($this->pengajuan->id),
+            ] : ['nullable'],
         ], [
+            'modePenomoran.required' => 'Metode penomoran wajib dipilih.',
+            'modePenomoran.in' => 'Metode penomoran tidak valid.',
             'data.nomor_surat.required' => 'Nomor surat wajib diisi.',
             'data.nomor_surat.max' => 'Nomor surat maksimal 255 karakter.',
+            'data.nomor_surat.unique' => 'Nomor surat sudah digunakan pada pengajuan lain.',
             'data.tanggal_surat.required' => 'Tanggal surat wajib diisi.',
             'data.tanggal_surat.date' => 'Tanggal surat tidak valid.',
         ]);
-        $this->pengajuan->nomor_surat = $this->data['nomor_surat'];
-        $this->pengajuan->tanggal_surat = $this->data['tanggal_surat'];
+
         $template = match ($this->pengajuan->jenis_surat) {
             'domisili' => 'surat.domisili',
             'sktm' => 'surat.sktm',
             'usaha' => 'surat.usaha',
+            'skck' => 'surat.skck',
             default => null,
         };
         abort_unless($template, 404);
-        $dataSktm = $this->pengajuan
-            ->data
-            ->pluck('value', 'field');
-        $pdf = Pdf::loadView(
-            $template,
-            [
-                'pengajuan' => $this->pengajuan,
-                'dataSktm' => $dataSktm,
-            ]
+
+        $asal = $this->pengajuan->status;
+        $filePath = null;
+
+        try {
+            DB::transaction(function () use ($template, &$filePath) {
+                $this->pengajuan->tanggal_surat = $this->data['tanggal_surat'];
+
+                if ($this->modePenomoran === 'otomatis') {
+                    $tahun = (int) Carbon::parse(
+                        $this->data['tanggal_surat']
+                    )->format('Y');
+
+                    $this->pengajuan->nomor_surat = app(
+                        NomorSuratService::class
+                    )->generate($tahun);
+                } else {
+                    $this->pengajuan->nomor_surat = $this->data['nomor_surat'];
+                }
+
+                $dataSktm = $this->pengajuan
+                    ->data
+                    ->pluck('value', 'field');
+                $pdf = Pdf::loadView(
+                    $template,
+                    [
+                        'pengajuan' => $this->pengajuan,
+                        'dataSktm' => $dataSktm,
+                    ]
+                );
+                $pdf->setPaper('a4', 'portrait');
+                $filePath = 'surat/'
+                    .$this->pengajuan->jenis_surat
+                    .'-'
+                    .$this->pengajuan->id
+                    .'-'
+                    .time()
+                    .'.pdf';
+                Storage::disk('b2')->put(
+                    $filePath,
+                    $pdf->output()
+                );
+
+                $this->pengajuan->file_pdf = $filePath;
+
+                app(PengajuanStatusService::class)->apply(
+                    $this->pengajuan,
+                    PengajuanSuratStatus::MENUNGGU_TANDA_TANGAN,
+                    Auth::user(),
+                );
+            });
+        } catch (\Throwable $e) {
+            // Kalau update database gagal,
+            // hapus PDF baru supaya tidak meninggalkan file sampah
+            if ($filePath !== null
+                && Storage::disk('b2')->exists($filePath)
+            ) {
+                Storage::disk('b2')->delete($filePath);
+            }
+
+            throw $e;
+        }
+
+        app(PengajuanStatusService::class)->kirimNotifikasi(
+            $this->pengajuan,
+            $asal,
+            PengajuanSuratStatus::MENUNGGU_TANDA_TANGAN,
         );
-        $pdf->setPaper('a4', 'portrait');
-        $filePath = 'surat/'
-            .$this->pengajuan->jenis_surat
-            .'-'
-            .$this->pengajuan->id
-            .'-'
-            .time()
-            .'.pdf';
-        Storage::disk('b2')->put(
-            $filePath,
-            $pdf->output()
-        );
-        DB::transaction(function () use ($filePath) {
-            $this->pengajuan->update([
-                'nomor_surat' => $this->data['nomor_surat'],
-                'tanggal_surat' => $this->data['tanggal_surat'],
-                'file_pdf' => $filePath,
-                'status' => PengajuanSuratStatus::MENUNGGU_TANDA_TANGAN->value,
-            ]);
-        });
+
         session()->flash(
             'success',
-            'Surat berhasil dibuat dan PDF berhasil disimpan.'
+            $this->modePenomoran === 'otomatis'
+                ? 'Surat berhasil dibuat dengan nomor '
+                    .$this->pengajuan->nomor_surat
+                    .' dan PDF berhasil disimpan.'
+                : 'Surat berhasil dibuat dan PDF berhasil disimpan.'
         );
         $this->redirect(
             route(

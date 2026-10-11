@@ -117,7 +117,7 @@
                                 <img src="{{ $foto->temporaryUrl() }}" alt="Preview Foto Penduduk"
                                     class="h-full w-full object-cover">
                             @elseif ($foto_lama)
-                                <img src="{{ asset('storage/' . $foto_lama) }}" alt="Foto Penduduk"
+                                <img src="{{ $penduduk->foto_url }}" alt="Foto Penduduk"
                                     class="h-full w-full object-cover">
                             @else
                                 <div class="text-center">

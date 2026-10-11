@@ -4,7 +4,9 @@ namespace App\Livewire\KepalaDesa;
 
 use App\Enums\PengajuanSuratStatus;
 use App\Models\PengajuanSurat;
+use App\Services\PengajuanStatusService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -27,7 +29,10 @@ class DetailPersetujuan extends Component
             404
         );
 
-        $this->pengajuan = $pengajuan->load('penduduk');
+        $this->pengajuan = $pengajuan->load([
+            'penduduk',
+            'statusHistories.user',
+        ]);
     }
 
     public function tandaTangani(): void
@@ -44,6 +49,7 @@ class DetailPersetujuan extends Component
             'domisili' => 'surat.domisili',
             'sktm' => 'surat.sktm',
             'usaha' => 'surat.usaha',
+            'skck' => 'surat.skck',
             default => null,
         };
         abort_unless($template, 404);
@@ -71,15 +77,20 @@ class DetailPersetujuan extends Component
             $pdf->output()
         );
 
+        $asal = $this->pengajuan->status;
+
         try {
 
             DB::transaction(function () use ($filePath) {
 
-                $this->pengajuan->update([
-                    'status' => PengajuanSuratStatus::SELESAI,
-                    'tanggal_selesai' => now(),
-                    'file_pdf' => $filePath,
-                ]);
+                $this->pengajuan->tanggal_selesai = now();
+                $this->pengajuan->file_pdf = $filePath;
+
+                app(PengajuanStatusService::class)->apply(
+                    $this->pengajuan,
+                    PengajuanSuratStatus::SELESAI,
+                    Auth::user(),
+                );
             });
         } catch (\Throwable $e) {
 
@@ -89,6 +100,12 @@ class DetailPersetujuan extends Component
 
             throw $e;
         }
+
+        app(PengajuanStatusService::class)->kirimNotifikasi(
+            $this->pengajuan,
+            $asal,
+            PengajuanSuratStatus::SELESAI,
+        );
 
         // Hapus PDF lama setelah PDF baru berhasil disimpan
         if (

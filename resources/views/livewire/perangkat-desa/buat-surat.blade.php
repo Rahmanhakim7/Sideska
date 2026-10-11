@@ -164,6 +164,33 @@
         </div>
         <div class="px-6 py-6">
             <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                {{-- Metode Penomoran --}}
+                <div class="sm:col-span-2">
+                    <label for="mode_penomoran" class="block text-sm font-medium text-slate-700">
+                        Metode Penomoran
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-2">
+                        <select id="mode_penomoran" wire:model.live="modePenomoran"
+                            class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                            <option value="manual">Manual</option>
+                            <option value="otomatis">Otomatis</option>
+                        </select>
+                    </div>
+                    @if ($modePenomoran === 'otomatis')
+                        <p class="mt-1.5 text-sm text-slate-500">
+                            Nomor surat dibuat otomatis oleh sistem sesuai format
+                            <code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">470/xxx/DS/tahun</code>.
+                        </p>
+                    @endif
+                    @error('modePenomoran')
+                        <p class="mt-1.5 text-sm text-red-600">
+                            {{ $message }}
+                        </p>
+                    @enderror
+                </div>
+
                 @forelse ($fields as $field)
                     <div>
                         <label for="{{ $field['name'] }}" class="block text-sm font-medium text-slate-700">
@@ -174,9 +201,18 @@
                         </label>
                         <div class="mt-2">
                             <input id="{{ $field['name'] }}" type="{{ $field['type'] }}"
-                                wire:model="data.{{ $field['name'] }}"
+                                value="{{ $this->nilaiField($field['name']) }}"
+                                wire:model{{ $field['name'] === 'tanggal_surat' ? '.live' : '' }}="data.{{ $field['name'] }}"
+                                @if ($field['name'] === 'nomor_surat' && $modePenomoran === 'otomatis')
+                                    readonly
+                                @endif
                                 class="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
                         </div>
+                        @if ($field['name'] === 'nomor_surat' && $modePenomoran === 'otomatis')
+                            <p class="mt-1.5 text-sm text-slate-500">
+                                Pratinjau: nomor final dihitung server saat surat disimpan.
+                            </p>
+                        @endif
                         @error('data.' . $field['name'])
                             <p class="mt-1.5 text-sm text-red-600">
                                 {{ $message }}

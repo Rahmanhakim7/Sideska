@@ -81,8 +81,8 @@
                                 <div class="flex items-center gap-3">
                                     <div
                                         class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                                        @if ($item->foto)
-                                            <img src="{{ $item->foto }}" alt="{{ $item->nama }}"
+                                        @if ($item->foto_url)
+                                            <img src="{{ $item->foto_url }}" alt="{{ $item->nama }}"
                                                 class="h-full w-full object-cover">
                                         @else
                                             {{ strtoupper(substr($item->nama, 0, 1)) }}

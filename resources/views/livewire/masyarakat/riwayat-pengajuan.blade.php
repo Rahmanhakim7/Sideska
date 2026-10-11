@@ -208,16 +208,27 @@
                             </div>
                         @endif
                         <div class="mt-5 border-t border-slate-100 pt-4">
-                            <div class="flex items-center gap-2 text-xs text-slate-400">
-                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                        d="M12 8v4l2.5 1.5" />
-                                    <circle cx="12" cy="12" r="9" stroke="currentColor"
-                                        stroke-width="1.8" />
-                                </svg>
-                                Diperbarui {{ $item->updated_at->format('d M Y, H:i') }}
-                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 text-xs text-slate-400">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                            d="M12 8v4l2.5 1.5" />
+                                        <circle cx="12" cy="12" r="9" stroke="currentColor"
+                                            stroke-width="1.8" />
+                                    </svg>
+                                    Diperbarui {{ $item->updated_at->format('d M Y, H:i') }}
+                                </div>
 
+                                <a href="{{ route('masyarakat.surat.detail', $item) }}" wire:navigate
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                                            d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" />
+                                        <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                                    </svg>
+                                    Detail
+                                </a>
+                            </div>
                         </div>
 
                     </div>

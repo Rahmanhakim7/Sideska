@@ -4,6 +4,8 @@ namespace App\Livewire\PerangkatDesa;
 
 use App\Enums\PengajuanSuratStatus;
 use App\Models\PengajuanSurat;
+use App\Services\PengajuanStatusService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -12,25 +14,34 @@ use Livewire\Component;
 class DetailPelayananSurat extends Component
 {
     public PengajuanSurat $pengajuan;
+
     public bool $showModalTolak = false;
+
     public string $alasanPenolakan = '';
+
     public bool $showModalRevisi = false;
+
     public string $alasanRevisi = '';
+
     public function mount(PengajuanSurat $pengajuan): void
     {
         $this->pengajuan = $pengajuan->load([
             'penduduk',
             'data',
+            'statusHistories.user',
         ]);
     }
+
     public function bukaModalTolak(): void
     {
         $this->showModalTolak = true;
     }
+
     public function bukaModalRevisi(): void
     {
         $this->showModalRevisi = true;
     }
+
     public function mintaRevisi(): void
     {
         if ($this->pengajuan->status !== PengajuanSuratStatus::DIAJUKAN) {
@@ -45,17 +56,28 @@ class DetailPelayananSurat extends Component
             'alasanRevisi.max' => 'Alasan revisi maksimal 1000 karakter.',
         ]);
 
+        $asal = $this->pengajuan->status;
+
         DB::transaction(function () {
-            $this->pengajuan->update([
-                'status' => PengajuanSuratStatus::REVISI,
-                'catatan' => $this->alasanRevisi,
-            ]);
+            $this->pengajuan->catatan = $this->alasanRevisi;
+
+            app(PengajuanStatusService::class)->apply(
+                $this->pengajuan,
+                PengajuanSuratStatus::REVISI,
+                Auth::user(),
+            );
         });
 
         $this->pengajuan->refresh();
         $this->pengajuan->load('penduduk');
         $this->showModalRevisi = false;
         $this->alasanRevisi = '';
+
+        app(PengajuanStatusService::class)->kirimNotifikasi(
+            $this->pengajuan,
+            $asal,
+            PengajuanSuratStatus::REVISI,
+        );
     }
 
     public function terima(): void
@@ -65,6 +87,7 @@ class DetailPelayananSurat extends Component
         }
         $this->ubahStatus(PengajuanSuratStatus::DIPROSES);
     }
+
     public function tolak(): void
     {
         if ($this->pengajuan->status !== PengajuanSuratStatus::DIAJUKAN) {
@@ -77,17 +100,31 @@ class DetailPelayananSurat extends Component
             'alasanPenolakan.min' => 'Alasan penolakan minimal 5 karakter.',
             'alasanPenolakan.max' => 'Alasan penolakan maksimal 1000 karakter.',
         ]);
+
+        $asal = $this->pengajuan->status;
+
         DB::transaction(function () {
-            $this->pengajuan->update([
-                'status' => PengajuanSuratStatus::DITOLAK,
-                'catatan' => $this->alasanPenolakan,
-            ]);
+            $this->pengajuan->catatan = $this->alasanPenolakan;
+
+            app(PengajuanStatusService::class)->apply(
+                $this->pengajuan,
+                PengajuanSuratStatus::DITOLAK,
+                Auth::user(),
+            );
         });
+
         $this->pengajuan->refresh();
         $this->pengajuan->load('penduduk');
         $this->showModalTolak = false;
         $this->alasanPenolakan = '';
+
+        app(PengajuanStatusService::class)->kirimNotifikasi(
+            $this->pengajuan,
+            $asal,
+            PengajuanSuratStatus::DITOLAK,
+        );
     }
+
     public function prosesSurat(): void
     {
         if ($this->pengajuan->status !== PengajuanSuratStatus::DIPROSES) {
@@ -97,15 +134,27 @@ class DetailPelayananSurat extends Component
             PengajuanSuratStatus::MENUNGGU_TANDA_TANGAN
         );
     }
-    protected function ubahStatus(PengajuanSuratStatus $status): void
+
+    protected function ubahStatus(PengajuanSuratStatus $tujuan): void
     {
-        DB::transaction(function () use ($status) {
-            $this->pengajuan->update([
-                'status' => $status,
-            ]);
+        $asal = $this->pengajuan->status;
+
+        DB::transaction(function () use ($tujuan) {
+            app(PengajuanStatusService::class)->apply(
+                $this->pengajuan,
+                $tujuan,
+                Auth::user(),
+            );
         });
+
         $this->pengajuan->refresh();
         $this->pengajuan->load('penduduk');
+
+        app(PengajuanStatusService::class)->kirimNotifikasi(
+            $this->pengajuan,
+            $asal,
+            $tujuan,
+        );
     }
 
     public function render()
@@ -120,6 +169,7 @@ class DetailPelayananSurat extends Component
         };
         $dataSktm = $this->pengajuan->data
             ->pluck('value', 'field');
+
         return view(
             'livewire.perangkat-desa.detail-pelayanan-surat',
             [

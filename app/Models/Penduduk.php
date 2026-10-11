@@ -2,13 +2,19 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Penduduk extends Model
 {
+    use HasFactory;
+
     protected $table = 'penduduk';
+
     protected $fillable = [
         'user_id',
         'foto',
@@ -39,6 +45,27 @@ class Penduduk extends Model
     protected $casts = [
         'tanggal_lahir' => 'date',
     ];
+
+    public function fotoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?string {
+                $foto = $this->foto;
+
+                if ($foto === null || $foto === '') {
+                    return null;
+                }
+
+                $skema = parse_url($foto, PHP_URL_SCHEME);
+
+                if ($skema !== null) {
+                    return in_array($skema, ['http', 'https'], true) ? $foto : null;
+                }
+
+                return Storage::disk('public')->url($foto);
+            }
+        );
+    }
 
     public function user(): BelongsTo
     {

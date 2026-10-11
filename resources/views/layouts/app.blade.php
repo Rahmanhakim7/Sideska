@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'SIDESKA') }}</title>
+    <title>SIDESKA — Sistem Informasi Desa Sekartejo</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link
         href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap"
@@ -24,13 +24,15 @@
                         Dashboard
                     </h1>
                     <p class="text-xs text-slate-500">
-                        Sistem Informasi Desa
+                        Sistem Informasi Desa Sekartejo
                     </p>
                 </div>
-                <div
-                    x-data="{ open: false }"
-                    class="relative"
-                >
+                <div class="flex items-center gap-4">
+                    <livewire:components.notification-bell />
+                    <div
+                        x-data="{ open: false }"
+                        class="relative"
+                    >
                     <button
                         type="button"
                         @click="open = !open"
@@ -108,6 +110,7 @@
                             </svg>
                             <span>Profil</span>
                         </a>
+                    </div>
                     </div>
                 </div>
             </div>

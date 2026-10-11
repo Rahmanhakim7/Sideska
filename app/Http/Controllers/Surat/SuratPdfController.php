@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Surat;
 
+use App\Enums\PengajuanSuratStatus;
 use App\Models\PengajuanSurat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -52,12 +53,19 @@ class SuratPdfController
 
     private function authorizeAccess(PengajuanSurat $pengajuan): void
     {
-        if (Auth::user()?->role !== 'masyarakat') {
+        $user = Auth::user();
+
+        if ($user?->role !== 'masyarakat') {
             return;
         }
 
         abort_unless(
-            $pengajuan->penduduk_id === Auth::user()?->penduduk?->id,
+            $pengajuan->penduduk_id === $user?->penduduk?->id,
+            403
+        );
+
+        abort_unless(
+            $pengajuan->status === PengajuanSuratStatus::SELESAI,
             403
         );
     }

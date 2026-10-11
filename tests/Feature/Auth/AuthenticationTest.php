@@ -44,11 +44,11 @@ test('users can not authenticate with invalid password', function () {
 });
 
 test('navigation menu can be rendered', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create(['role' => 'masyarakat']);
 
     $this->actingAs($user);
 
-    $response = $this->get('/dashboard');
+    $response = $this->get(route('dashboard'));
 
     $response
         ->assertOk()

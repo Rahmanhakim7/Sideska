@@ -922,6 +922,20 @@
         </div>
     </div>
 
+    {{-- Riwayat Status --}}
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-200 px-6 py-5">
+            <h2 class="text-lg font-semibold text-slate-800">
+                Riwayat Status
+            </h2>
+        </div>
+        <div class="px-6 py-6">
+            @include('livewire.components.pengajuan-timeline', [
+                'histori' => $pengajuan->statusHistories,
+            ])
+        </div>
+    </div>
+
     @if ($showModalTolak)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
             wire:click.self="$set('showModalTolak', false)">
