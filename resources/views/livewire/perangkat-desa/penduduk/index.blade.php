@@ -172,8 +172,8 @@
 
                                     {{-- HAPUS --}}
                                     <button type="button" title="Hapus penduduk"
-                                        wire:click="hapus({{ $item->id }})"
-                                        wire:confirm="Apakah Anda yakin ingin menghapus data {{ $item->nama }}?"
+                                        aria-label="Hapus data {{ $item->nama }}"
+                                        wire:click="konfirmasiHapus({{ $item->id }})"
                                         class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
 
                                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -291,6 +291,98 @@
                     @endif
 
                 </div>
+            </div>
+        </div>
+    @endif
+    {{-- Modal Konfirmasi Hapus --}}
+    @if ($showModalHapus && $pendudukAkanDihapus)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
+            wire:click.self="$set('showModalHapus', false)" role="dialog" aria-modal="true"
+            aria-labelledby="judulModalHapus">
+            <div class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+                {{-- Header Modal --}}
+                <div class="px-6 pt-6">
+                    <div
+                        class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 7h12M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7m-7 0 .75 12.5h6.5L16 7M10 10.5v5M14 10.5v5" />
+                        </svg>
+                    </div>
+
+                    <h2 id="judulModalHapus" class="mt-4 text-center text-lg font-bold text-slate-800">
+                        Hapus Data Penduduk?
+                    </h2>
+
+                    <p class="mt-1 text-center text-sm text-slate-500">
+                        Apakah Anda yakin ingin menghapus data penduduk berikut?
+                    </p>
+                </div>
+
+                {{-- Isi Modal --}}
+                <div class="px-6 py-6">
+
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                        <dl class="space-y-2 text-sm">
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="shrink-0 text-slate-500">
+                                    Nama
+                                </dt>
+                                <dd class="text-right font-semibold text-slate-800">
+                                    {{ $pendudukAkanDihapus->nama }}
+                                </dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4">
+                                <dt class="shrink-0 text-slate-500">
+                                    NIK
+                                </dt>
+                                <dd class="text-right font-semibold text-slate-800">
+                                    {{ $pendudukAkanDihapus->nik }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                        <div class="flex items-start gap-3">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01M10.29 3.86l-7.82 14a2 2 0 001.74 3h15.58a2 2 0 001.74-3l-7.82-14a2 2 0 00-3.42 0z" />
+                            </svg>
+
+                            <p class="text-sm leading-6 text-amber-800">
+                                Data penduduk dan akun SIDESKA terkait akan ikut
+                                dihapus. Tindakan ini tidak dapat dibatalkan.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- Footer Modal --}}
+                <div class="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+
+                    <button type="button" wire:click="$set('showModalHapus', false)"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+                        Batal
+                    </button>
+
+                    <button type="button" wire:click="hapusPenduduk" wire:loading.attr="disabled"
+                        wire:target="hapusPenduduk"
+                        class="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
+                        <span wire:loading.remove wire:target="hapusPenduduk">
+                            Ya, Hapus
+                        </span>
+
+                        <span wire:loading wire:target="hapusPenduduk">
+                            Menghapus...
+                        </span>
+                    </button>
+
+                </div>
+
             </div>
         </div>
     @endif
