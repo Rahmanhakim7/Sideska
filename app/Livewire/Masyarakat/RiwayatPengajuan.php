@@ -32,6 +32,10 @@ class RiwayatPengajuan extends Component
                 'pengajuan' => $pengajuan->id,
             ]),
 
+            'keterangan_pindah' => route('masyarakat.ajukan-surat.keterangan-pindah', [
+                'pengajuan' => $pengajuan->id,
+            ]),
+
             default => '#',
         };
     }

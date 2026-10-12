@@ -237,6 +237,9 @@ class PengajuanStatusService
             'skck' => route('masyarakat.ajukan-surat.skck', [
                 'pengajuan' => $pengajuan->id,
             ]),
+            'keterangan_pindah' => route('masyarakat.ajukan-surat.keterangan-pindah', [
+                'pengajuan' => $pengajuan->id,
+            ]),
             default => route('notifikasi'),
         };
     }

@@ -49,6 +49,10 @@ class DetailPengajuan extends Component
                 'pengajuan' => $this->pengajuan->id,
             ]),
 
+            'keterangan_pindah' => route('masyarakat.ajukan-surat.keterangan-pindah', [
+                'pengajuan' => $this->pengajuan->id,
+            ]),
+
             default => '#',
         };
     }

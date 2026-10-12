@@ -504,6 +504,201 @@
                     </div>
 
                 </div>
+            @elseif ($pengajuan->jenis_surat === 'keterangan_pindah')
+                <div class="space-y-6">
+
+                    {{-- INFO --}}
+                    <div class="rounded-xl border border-blue-100 bg-blue-50/60 px-5 py-5">
+                        <div class="flex items-start gap-3">
+
+                            <div
+                                class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M12 21a9 9 0 100-18 9 9 0 000 18z" />
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-semibold text-blue-900">
+                                    Data Perpindahan
+                                </p>
+
+                                <p class="mt-1 text-sm leading-6 text-blue-700">
+                                    Data perpindahan yang akan dicantumkan pada
+                                    Surat Keterangan Pindah.
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {{-- DATA PERPINDAHAN --}}
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+                        <div class="rounded-2xl border border-slate-200 bg-white md:col-span-2">
+
+                            <div class="border-b border-slate-100 px-5 py-4">
+                                <div class="flex items-center gap-3">
+
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-slate-800">
+                                            Informasi Perpindahan
+                                        </h3>
+
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            Alasan dan tujuan perpindahan pemohon.
+                                        </p>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-5 px-5 py-5 sm:grid-cols-2">
+
+                                {{-- Alasan Pindah --}}
+                                <div class="sm:col-span-2">
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Alasan Pindah
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                                        {{ $dataSktm['alasan_pindah'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Alamat Tujuan --}}
+                                <div class="sm:col-span-2">
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Alamat Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                                        {{ $dataSktm['alamat_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- RT/RW Tujuan --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        RT/RW Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataSktm['rt_tujuan'] ?? '-' }}/{{ $dataSktm['rw_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Desa/Kelurahan Tujuan --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Desa/Kelurahan Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataSktm['desa_kelurahan_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Kecamatan Tujuan --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Kecamatan Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataSktm['kecamatan_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Kabupaten/Kota Tujuan --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Kabupaten/Kota Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataSktm['kabupaten_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Provinsi Tujuan --}}
+                                <div>
+                                    <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                        Provinsi Tujuan
+                                    </label>
+
+                                    <div
+                                        class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                        {{ $dataSktm['provinsi_tujuan'] ?? '-' }}
+                                    </div>
+                                </div>
+
+                                {{-- Klasifikasi Pindah --}}
+                                @if (! empty($dataSktm['klasifikasi_pindah']))
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Klasifikasi Pindah
+                                        </label>
+
+                                        <div
+                                            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                            {{ $dataSktm['klasifikasi_pindah'] }}
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- Jumlah Anggota Pindah --}}
+                                @if (! empty($dataSktm['jumlah_anggota_pindah']))
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Jumlah Anggota Pindah
+                                        </label>
+
+                                        <div
+                                            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                            {{ $dataSktm['jumlah_anggota_pindah'] }}
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- Tanggal Pindah --}}
+                                @if (! empty($dataSktm['tanggal_pindah']))
+                                    <div>
+                                        <label class="mb-2 block text-sm font-semibold text-slate-700">
+                                            Tanggal Pindah
+                                        </label>
+
+                                        <div
+                                            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                                            {{ $dataSktm['tanggal_pindah'] }}
+                                        </div>
+                                    </div>
+                                @endif
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
             @endif
         </div>
     </div>

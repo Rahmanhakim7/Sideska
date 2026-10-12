@@ -104,6 +104,20 @@ class BuatSurat extends Component
                     'required' => true,
                 ],
             ],
+            'keterangan_pindah' => [
+                [
+                    'name' => 'nomor_surat',
+                    'label' => 'Nomor Surat',
+                    'type' => 'text',
+                    'required' => true,
+                ],
+                [
+                    'name' => 'tanggal_surat',
+                    'label' => 'Tanggal Surat',
+                    'type' => 'date',
+                    'required' => true,
+                ],
+            ],
             default => [],
         };
     }
@@ -197,6 +211,7 @@ class BuatSurat extends Component
             'sktm' => 'surat.sktm',
             'usaha' => 'surat.usaha',
             'skck' => 'surat.skck',
+            'keterangan_pindah' => 'surat.keterangan-pindah',
             default => null,
         };
         abort_unless($template, 404);

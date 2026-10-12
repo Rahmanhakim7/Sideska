@@ -50,6 +50,7 @@ class DetailPersetujuan extends Component
             'sktm' => 'surat.sktm',
             'usaha' => 'surat.usaha',
             'skck' => 'surat.skck',
+            'keterangan_pindah' => 'surat.keterangan-pindah',
             default => null,
         };
         abort_unless($template, 404);
