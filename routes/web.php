@@ -18,6 +18,7 @@ use App\Livewire\Notifikasi;
 use App\Livewire\PerangkatDesa\BuatSurat;
 use App\Livewire\PerangkatDesa\Dashboard as PerangkatDesaDashboard;
 use App\Livewire\PerangkatDesa\DetailPelayananSurat;
+use App\Livewire\PerangkatDesa\MutasiMasuk\Create as MutasiMasukCreate;
 use App\Livewire\PerangkatDesa\PelayananSurat;
 use App\Livewire\PerangkatDesa\Penduduk\Create as PendudukCreate;
 use App\Livewire\PerangkatDesa\Penduduk\Edit as PendudukEdit;
@@ -30,61 +31,64 @@ Route::get('/', function () {
 });
 
 Route::get('/admin/dashboard', AdminDashboard::class)
-    ->middleware(['auth', 'role:admin'])
+    ->middleware(['auth', 'active', 'role:admin'])
     ->name('admin.dashboard');
 
 Route::get('/perangkat-desa/dashboard', PerangkatDesaDashboard::class)
-    ->middleware(['auth', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.dashboard');
 Route::get('/perangkat-desa/penduduk', PendudukIndex::class)
-    ->middleware(['auth', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.penduduk.index');
+Route::get('/perangkat-desa/mutasi-masuk', MutasiMasukCreate::class)
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
+    ->name('perangkat-desa.mutasi-masuk.create');
 Route::get('/perangkat-desa/penduduk/create', PendudukCreate::class)
-    ->middleware(['auth', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.penduduk.create');
 Route::get('/perangkat-desa/penduduk/{penduduk}/show', PendudukShow::class)
-    ->middleware(['auth', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.penduduk.show');
 Route::get('/perangkat-desa/penduduk/{penduduk}/edit', PendudukEdit::class)
-    ->middleware(['auth', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.penduduk.edit');
 Route::get('/perangkat-desa/pelayanan-surat', PelayananSurat::class)
-    ->middleware(['auth', 'verified', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'verified', 'role:perangkat_desa'])
     ->name('perangkat-desa.pelayanan-surat');
 Route::get('/perangkat-desa/pelayanan-surat/{pengajuan}', DetailPelayananSurat::class)
-    ->middleware(['auth', 'verified', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'verified', 'role:perangkat_desa'])
     ->name('perangkat-desa.pelayanan-surat.detail');
 Route::get('/perangkat-desa/pelayanan-surat/{pengajuan}/buat', BuatSurat::class)
-    ->middleware(['auth', 'verified', 'role:perangkat_desa'])
+    ->middleware(['auth', 'active', 'verified', 'role:perangkat_desa'])
     ->name('perangkat-desa.pelayanan-surat.buat');
 Route::get(
     '/perangkat-desa/pelayanan-surat/{pengajuan}/pdf',
     [SuratPdfController::class, 'show']
 )
-    ->middleware(['auth', 'verified', 'role:perangkat_desa,kepala_desa,masyarakat'])
+    ->middleware(['auth', 'active', 'verified', 'role:perangkat_desa,kepala_desa,masyarakat'])
     ->name('perangkat-desa.pelayanan-surat.pdf');
 
 Route::get(
     '/perangkat-desa/pelayanan-surat/{pengajuan}/pdf/download',
     [SuratPdfController::class, 'download']
 )
-    ->middleware(['auth', 'verified', 'role:perangkat_desa,kepala_desa,masyarakat'])
+    ->middleware(['auth', 'active', 'verified', 'role:perangkat_desa,kepala_desa,masyarakat'])
     ->name('perangkat-desa.pelayanan-surat.pdf.download');
 
 Route::get('/kepala-desa/dashboard', KepalaDesaDashboard::class)
-    ->middleware(['auth', 'role:kepala_desa'])
+    ->middleware(['auth', 'active', 'role:kepala_desa'])
     ->name('kepala.dashboard');
 Route::get('/kepala-desa/persetujuan', Persetujuan::class)
-    ->middleware(['auth', 'role:kepala_desa'])
+    ->middleware(['auth', 'active', 'role:kepala_desa'])
     ->name('kepala.persetujuan');
 Route::get('/kepala-desa/persetujuan/{pengajuan}', DetailPersetujuan::class)
-    ->middleware(['auth', 'role:kepala_desa'])
+    ->middleware(['auth', 'active', 'role:kepala_desa'])
     ->name('kepala.persetujuan.detail');
 
 Route::get('/masyarakat/dashboard', MasyarakatDashboard::class)
-    ->middleware(['auth', 'verified', 'role:masyarakat'])
+    ->middleware(['auth', 'active', 'verified', 'role:masyarakat'])
     ->name('dashboard');
-Route::middleware(['auth', 'role:masyarakat'])->group(function () {
+Route::middleware(['auth', 'active', 'role:masyarakat'])->group(function () {
     Route::get('/masyarakat/ajukan-surat', AjukanSurat::class)
         ->name('masyarakat.surat.create');
     Route::get('/masyarakat/ajukan-surat/domisili/{pengajuan?}', Domisili::class)
@@ -104,10 +108,10 @@ Route::middleware(['auth', 'role:masyarakat'])->group(function () {
 });
 
 Route::get('/notifikasi', Notifikasi::class)
-    ->middleware(['auth'])
+    ->middleware(['auth', 'active'])
     ->name('notifikasi');
 
 Route::view('profile', 'profile')
-    ->middleware(['auth'])
+    ->middleware(['auth', 'active'])
     ->name('profile');
 require __DIR__.'/auth.php';

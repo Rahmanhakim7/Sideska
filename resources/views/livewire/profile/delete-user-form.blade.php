@@ -17,7 +17,18 @@ new class extends Component
             'password' => ['required', 'string', 'current_password'],
         ]);
 
-        tap(Auth::user(), $logout(...))->delete();
+        $user = Auth::user();
+
+        if ($user->penduduk()->exists()) {
+            $this->addError(
+                'password',
+                'Akun ini terhubung dengan data penduduk dan tidak dapat dihapus dari halaman profil. Silakan hubungi perangkat desa.'
+            );
+
+            return;
+        }
+
+        tap($user, $logout(...))->delete();
 
         $this->redirect('/', navigate: true);
     }

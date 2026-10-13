@@ -267,16 +267,6 @@ class Edit extends Component
                 'max:20',
             ],
 
-            'status_kependudukan' => [
-                'required',
-                Rule::in([
-                    'Tetap',
-                    'Pendatang',
-                    'Pindah',
-                    'Tidak Diketahui',
-                ]),
-            ],
-
             'disabilitas' => [
                 'required',
                 Rule::in([
@@ -324,7 +314,6 @@ class Edit extends Component
             'dusun' => 'dusun',
             'kewarganegaraan' => 'kewarganegaraan',
             'no_hp' => 'nomor HP / WhatsApp',
-            'status_kependudukan' => 'status kependudukan',
             'disabilitas' => 'penyandang disabilitas',
             'nama_ayah' => 'nama ayah',
             'nama_ibu' => 'nama ibu',
@@ -374,7 +363,6 @@ class Edit extends Component
                     'dusun' => $this->dusun,
                     'kewarganegaraan' => $this->kewarganegaraan,
                     'no_hp' => $this->no_hp,
-                    'status_kependudukan' => $this->status_kependudukan,
                     'disabilitas' => $this->disabilitas === 'Ya',
                     'nama_ayah' => $this->nama_ayah,
                     'nama_ibu' => $this->nama_ibu,

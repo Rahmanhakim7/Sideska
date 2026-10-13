@@ -822,42 +822,19 @@
                     {{-- STATUS KEPENDUDUKAN --}}
                     <div class="mb-5">
 
-                        <label for="status_kependudukan" class="mb-2 block text-sm font-semibold text-slate-700">
+                        <label class="mb-2 block text-sm font-semibold text-slate-700">
                             Status Kependudukan
-                            <span class="text-red-500">*</span>
                         </label>
 
-                        <select id="status_kependudukan" wire:model="status_kependudukan"
-                            class="w-full rounded-lg border border-slate-300
-                                   bg-white px-4 py-3 text-sm text-slate-700
-                                   outline-none transition focus:border-blue-500
-                                   focus:ring-2 focus:ring-blue-100">
-                            <option value="">
-                                Pilih status kependudukan
-                            </option>
+                        <div class="w-full rounded-lg border border-slate-200
+                                    bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                            {{ $status_kependudukan ?: '-' }}
+                        </div>
 
-                            <option value="Tetap">
-                                Penduduk Tetap
-                            </option>
-
-                            <option value="Pendatang">
-                                Penduduk Pendatang
-                            </option>
-
-                            <option value="Pindah">
-                                Pindah
-                            </option>
-
-                            <option value="Tidak Diketahui">
-                                Tidak Diketahui
-                            </option>
-                        </select>
-
-                        @error('status_kependudukan')
-                            <p class="mt-1.5 text-xs text-red-600">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                        <p class="mt-2 text-xs text-slate-500">
+                            Status kependudukan tidak dapat diubah dari halaman ini.
+                            Perubahan status dilakukan melalui proses mutasi penduduk.
+                        </p>
 
                     </div>
 

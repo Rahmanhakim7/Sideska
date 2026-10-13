@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PerangkatDesa\Penduduk;
 
+use App\Enums\StatusKependudukan;
 use App\Models\Penduduk;
 use App\Models\User;
 use App\Services\PendudukFotoService;
@@ -224,12 +225,7 @@ class Create extends Component
             ],
             'status_kependudukan' => [
                 'required',
-                Rule::in([
-                    'Tetap',
-                    'Pendatang',
-                    'Pindah',
-                    'Tidak Diketahui',
-                ]),
+                Rule::in(StatusKependudukan::creatableValues()),
             ],
             'disabilitas' => [
                 'required',

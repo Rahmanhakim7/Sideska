@@ -40,8 +40,5 @@ class DatabaseSeeder extends Seeder
         ]);
         $masyarakat->role = 'masyarakat';
         $masyarakat->save();
-
-        $this->call(PendudukSeeder::class);
-        $this->call(PengajuanSuratSeeder::class);
     }
 }

@@ -1108,10 +1108,6 @@
                                 Penduduk Pendatang
                             </option>
 
-                            <option value="Pindah">
-                                Pindah
-                            </option>
-
                             <option value="Tidak Diketahui">
                                 Tidak Diketahui
                             </option>

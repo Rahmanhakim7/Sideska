@@ -76,4 +76,9 @@ class Penduduk extends Model
     {
         return $this->hasMany(PengajuanSurat::class);
     }
+
+    public function mutasiPenduduk(): HasMany
+    {
+        return $this->hasMany(MutasiPenduduk::class);
+    }
 }

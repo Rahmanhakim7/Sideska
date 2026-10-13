@@ -3,38 +3,18 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Livewire\Volt\Volt;
 
-test('registration screen can be rendered', function () {
-    $response = $this->get('/register');
-
-    $response
-        ->assertOk()
-        ->assertSeeVolt('pages.auth.register');
+test('registration screen is no longer available', function () {
+    $this->get('/register')->assertNotFound();
 });
 
-test('new users can register', function () {
-    $component = Volt::test('pages.auth.register')
-        ->set('name', 'Test User')
-        ->set('email', 'test@example.com')
-        ->set('password', 'password')
-        ->set('password_confirmation', 'password');
+test('public registration cannot create a user', function () {
+    $this->post('/register', [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertNotFound();
 
-    $component->call('register');
-
-    $component->assertRedirect(route('dashboard', absolute: false));
-
-    $this->assertAuthenticated();
-});
-
-test('registered users get the masyarakat role', function () {
-    Volt::test('pages.auth.register')
-        ->set('name', 'Test User')
-        ->set('email', 'test@example.com')
-        ->set('password', 'password')
-        ->set('password_confirmation', 'password')
-        ->call('register');
-
-    expect(User::where('email', 'test@example.com')->firstOrFail()->role)
-        ->toBe('masyarakat');
+    expect(User::where('email', 'test@example.com')->exists())->toBeFalse();
 });

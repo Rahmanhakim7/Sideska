@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Penduduk;
 use App\Models\User;
 use Livewire\Volt\Volt;
 
@@ -86,4 +87,23 @@ test('correct password must be provided to delete account', function () {
         ->assertNoRedirect();
 
     $this->assertNotNull($user->fresh());
+});
+
+test('user with penduduk cannot self delete', function () {
+    $user = User::factory()->create();
+    $penduduk = Penduduk::factory()->create(['user_id' => $user->id]);
+
+    $this->actingAs($user);
+
+    $component = Volt::test('profile.delete-user-form')
+        ->set('password', 'password')
+        ->call('deleteUser');
+
+    $component
+        ->assertHasErrors('password')
+        ->assertNoRedirect();
+
+    $this->assertNotNull($user->fresh());
+    $this->assertNotNull($penduduk->fresh());
+    $this->assertAuthenticated();
 });
