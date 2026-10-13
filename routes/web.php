@@ -18,6 +18,7 @@ use App\Livewire\Notifikasi;
 use App\Livewire\PerangkatDesa\BuatSurat;
 use App\Livewire\PerangkatDesa\Dashboard as PerangkatDesaDashboard;
 use App\Livewire\PerangkatDesa\DetailPelayananSurat;
+use App\Livewire\PerangkatDesa\MutasiKeluar\Create as MutasiKeluarCreate;
 use App\Livewire\PerangkatDesa\MutasiMasuk\Create as MutasiMasukCreate;
 use App\Livewire\PerangkatDesa\PelayananSurat;
 use App\Livewire\PerangkatDesa\Penduduk\Create as PendudukCreate;
@@ -43,6 +44,9 @@ Route::get('/perangkat-desa/penduduk', PendudukIndex::class)
 Route::get('/perangkat-desa/mutasi-masuk', MutasiMasukCreate::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.mutasi-masuk.create');
+Route::get('/perangkat-desa/penduduk/{penduduk}/mutasi-keluar', MutasiKeluarCreate::class)
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
+    ->name('perangkat-desa.mutasi-keluar.create');
 Route::get('/perangkat-desa/penduduk/create', PendudukCreate::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.penduduk.create');

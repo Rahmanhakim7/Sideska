@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class MutasiPendudukService
 {
@@ -94,8 +95,81 @@ class MutasiPendudukService
                 'alasan' => $data['alasan'] ?? null,
                 'catatan' => $data['catatan'] ?? null,
                 'pengajuan_surat_id' => $data['pengajuan_surat_id'] ?? null,
+                'user_id' => $aktor->id,
+            ]);
+        });
+    }
+
+    /**
+     * Jalankan workflow Mutasi Keluar secara atomik.
+     *
+     * Mengunci Penduduk target, memvalidasi ulang aturan bisnis, lalu menandai
+     * Penduduk sebagai Pindah dan menonaktifkan User terkait, lalu mencatat
+     * MutasiPenduduk berjenis KELUAR. Tidak ada Penduduk, User, atau PengajuanSurat
+     * yang dihapus — mutasi hanya sebuah event riwayat.
+     *
+     * Actor selalu diambil dari Auth::user(), bukan dari payload.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ValidationException
+     */
+    public function mutasiKeluar(int $pendudukId, array $data): MutasiPenduduk
+    {
+        $aktor = Auth::user();
+
+        return DB::transaction(function () use ($pendudukId, $data, $aktor): MutasiPenduduk {
+            $penduduk = Penduduk::query()
+                ->with('user')
+                ->lockForUpdate()
+                ->findOrFail($pendudukId);
+
+            $this->pastikanDapatMutasiKeluar($penduduk);
+
+            $alamatAsal = $this->alamatSnapshot($penduduk);
+
+            $penduduk->update([
+                'status_kependudukan' => StatusKependudukan::PINDAH->value,
+            ]);
+
+            $user = $penduduk->user;
+            $user->is_active = false;
+            $user->save();
+
+            return MutasiPenduduk::create([
+                'penduduk_id' => $penduduk->id,
+                'jenis' => JenisMutasi::KELUAR,
+                'tanggal_mutasi' => $data['tanggal_mutasi'],
+                'alamat_asal' => $alamatAsal,
+                'alamat_tujuan' => $data['alamat_tujuan'],
+                'alasan' => $data['alasan'] ?? null,
+                'catatan' => $data['catatan'] ?? null,
+                'pengajuan_surat_id' => $data['pengajuan_surat_id'] ?? null,
                 'user_id' => $aktor?->id,
             ]);
         });
+    }
+
+    /**
+     * Validasi ulang aturan bisnis Mutasi Keluar setelah Penduduk terkunci.
+     *
+     * Dilakukan di dalam transaksi, setelah lockForUpdate(), agar tidak hanya
+     * bergantung pada validation di sisi Livewire.
+     *
+     * @throws ValidationException
+     */
+    private function pastikanDapatMutasiKeluar(Penduduk $penduduk): void
+    {
+        if ($penduduk->user === null) {
+            throw ValidationException::withMessages([
+                'penduduk' => 'Penduduk ini tidak memiliki akun pengguna sehingga tidak dapat dimutasi keluar.',
+            ]);
+        }
+
+        if ($penduduk->status_kependudukan === StatusKependudukan::PINDAH->value) {
+            throw ValidationException::withMessages([
+                'penduduk' => 'Penduduk ini sudah berstatus Pindah dan tidak dapat dimutasi keluar lagi.',
+            ]);
+        }
     }
 }
