@@ -8,6 +8,20 @@
                 Daftar akun pengguna SIDESKA. Halaman ini hanya untuk melihat data.
             </p>
         </div>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <a href="{{ route('admin.pengguna.masyarakat.create') }}" wire:navigate
+                class="inline-flex w-fit items-center rounded-lg border border-blue-700 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                + Masyarakat
+            </a>
+            <a href="{{ route('admin.pengguna.perangkat-desa.create') }}" wire:navigate
+                class="inline-flex w-fit items-center rounded-lg border border-blue-700 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                + Perangkat Desa
+            </a>
+            <a href="{{ route('admin.pengguna.kepala-desa.create') }}" wire:navigate
+                class="inline-flex w-fit items-center rounded-lg border border-blue-700 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                + Kepala Desa
+            </a>
+        </div>
     </div>
 
     <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">

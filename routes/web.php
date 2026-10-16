@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Surat\SuratPdfController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Pengguna\CreateKepalaDesa as AdminPenggunaCreateKepalaDesa;
+use App\Livewire\Admin\Pengguna\CreateMasyarakat as AdminPenggunaCreateMasyarakat;
+use App\Livewire\Admin\Pengguna\CreatePerangkatDesa as AdminPenggunaCreatePerangkatDesa;
 use App\Livewire\Admin\Pengguna\Index as AdminPenggunaIndex;
 use App\Livewire\KepalaDesa\Dashboard as KepalaDesaDashboard;
 use App\Livewire\KepalaDesa\DetailPersetujuan;
@@ -43,6 +46,18 @@ Route::get('/admin/dashboard', AdminDashboard::class)
 Route::get('/admin/pengguna', AdminPenggunaIndex::class)
     ->middleware(['auth', 'active', 'role:admin'])
     ->name('admin.pengguna');
+
+Route::get('/admin/pengguna/masyarakat/create', AdminPenggunaCreateMasyarakat::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.pengguna.masyarakat.create');
+
+Route::get('/admin/pengguna/perangkat-desa/create', AdminPenggunaCreatePerangkatDesa::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.pengguna.perangkat-desa.create');
+
+Route::get('/admin/pengguna/kepala-desa/create', AdminPenggunaCreateKepalaDesa::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.pengguna.kepala-desa.create');
 
 Route::get('/perangkat-desa/dashboard', PerangkatDesaDashboard::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
