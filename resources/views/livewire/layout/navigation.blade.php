@@ -22,7 +22,8 @@ new class extends Component {
                lg:translate-x-0"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
         <div class="flex items-center h-16 px-5 border-b border-slate-200">
-            <a href="{{ route('dashboard') }}" wire:navigate class="flex items-center gap-3">
+            <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('dashboard') }}"
+                wire:navigate class="flex items-center gap-3">
                 <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-white overflow-hidden">
                     <img src="{{ asset('images/logo-sideska.png') }}" alt="Logo SIDESKA"
                         class="w-full h-full object-contain">

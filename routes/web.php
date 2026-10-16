@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Surat\SuratPdfController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Pengguna\Index as AdminPenggunaIndex;
 use App\Livewire\KepalaDesa\Dashboard as KepalaDesaDashboard;
 use App\Livewire\KepalaDesa\DetailPersetujuan;
 use App\Livewire\KepalaDesa\Mutasi\Index as KepalaDesaMutasiIndex;
@@ -38,6 +39,10 @@ Route::get('/', function () {
 Route::get('/admin/dashboard', AdminDashboard::class)
     ->middleware(['auth', 'active', 'role:admin'])
     ->name('admin.dashboard');
+
+Route::get('/admin/pengguna', AdminPenggunaIndex::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.pengguna');
 
 Route::get('/perangkat-desa/dashboard', PerangkatDesaDashboard::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
