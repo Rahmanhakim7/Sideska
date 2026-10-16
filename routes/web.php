@@ -4,6 +4,8 @@ use App\Http\Controllers\Surat\SuratPdfController;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\KepalaDesa\Dashboard as KepalaDesaDashboard;
 use App\Livewire\KepalaDesa\DetailPersetujuan;
+use App\Livewire\KepalaDesa\Mutasi\Index as KepalaDesaMutasiIndex;
+use App\Livewire\KepalaDesa\Mutasi\Show as KepalaDesaMutasiShow;
 use App\Livewire\KepalaDesa\Persetujuan;
 use App\Livewire\Masyarakat\AjukanSurat;
 use App\Livewire\Masyarakat\AjukanSurat\Domisili;
@@ -18,6 +20,8 @@ use App\Livewire\Notifikasi;
 use App\Livewire\PerangkatDesa\BuatSurat;
 use App\Livewire\PerangkatDesa\Dashboard as PerangkatDesaDashboard;
 use App\Livewire\PerangkatDesa\DetailPelayananSurat;
+use App\Livewire\PerangkatDesa\Mutasi\Index as MutasiIndex;
+use App\Livewire\PerangkatDesa\Mutasi\Show as MutasiShow;
 use App\Livewire\PerangkatDesa\MutasiKeluar\Create as MutasiKeluarCreate;
 use App\Livewire\PerangkatDesa\MutasiMasuk\Create as MutasiMasukCreate;
 use App\Livewire\PerangkatDesa\PelayananSurat;
@@ -44,6 +48,12 @@ Route::get('/perangkat-desa/penduduk', PendudukIndex::class)
 Route::get('/perangkat-desa/mutasi-masuk', MutasiMasukCreate::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.mutasi-masuk.create');
+Route::get('/perangkat-desa/mutasi', MutasiIndex::class)
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
+    ->name('perangkat-desa.mutasi.index');
+Route::get('/perangkat-desa/mutasi/{mutasiPenduduk}', MutasiShow::class)
+    ->middleware(['auth', 'active', 'role:perangkat_desa'])
+    ->name('perangkat-desa.mutasi.show');
 Route::get('/perangkat-desa/penduduk/{penduduk}/mutasi-keluar', MutasiKeluarCreate::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
     ->name('perangkat-desa.mutasi-keluar.create');
@@ -88,6 +98,12 @@ Route::get('/kepala-desa/persetujuan', Persetujuan::class)
 Route::get('/kepala-desa/persetujuan/{pengajuan}', DetailPersetujuan::class)
     ->middleware(['auth', 'active', 'role:kepala_desa'])
     ->name('kepala.persetujuan.detail');
+Route::get('/kepala-desa/mutasi', KepalaDesaMutasiIndex::class)
+    ->middleware(['auth', 'active', 'role:kepala_desa'])
+    ->name('kepala.mutasi.index');
+Route::get('/kepala-desa/mutasi/{mutasiPenduduk}', KepalaDesaMutasiShow::class)
+    ->middleware(['auth', 'active', 'role:kepala_desa'])
+    ->name('kepala.mutasi.show');
 
 Route::get('/masyarakat/dashboard', MasyarakatDashboard::class)
     ->middleware(['auth', 'active', 'verified', 'role:masyarakat'])

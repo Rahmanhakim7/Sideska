@@ -38,4 +38,18 @@
     Data Penduduk
 </a>
 
+<a href="{{ route('perangkat-desa.mutasi.index') }}" wire:navigate
+    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition
+        {{ request()->routeIs('perangkat-desa.mutasi.*')
+            ? 'bg-blue-50 text-blue-800'
+            : 'text-slate-600 hover:bg-blue-50 hover:text-blue-800' }}">
+
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+    </svg>
+
+    Mutasi Penduduk
+</a>
+
 

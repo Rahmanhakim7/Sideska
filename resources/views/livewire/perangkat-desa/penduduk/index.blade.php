@@ -8,10 +8,16 @@
                 Kelola data penduduk Desa Sekartejo.
             </p>
         </div>
-        <a href="{{ route('perangkat-desa.penduduk.create') }}"
-            class="inline-flex w-fit items-center rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-            + Tambah Penduduk
-        </a>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <a href="{{ route('perangkat-desa.mutasi-masuk.create') }}"
+                class="inline-flex w-fit items-center rounded-lg border border-blue-700 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50">
+                + Mutasi Masuk
+            </a>
+            <a href="{{ route('perangkat-desa.penduduk.create') }}"
+                class="inline-flex w-fit items-center rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+                + Tambah Penduduk
+            </a>
+        </div>
     </div>
     <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
         <div class="flex items-center gap-4">
