@@ -79,6 +79,9 @@
                         <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wide text-blue-900">
                             Dibuat
                         </th>
+                        <th class="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wide text-blue-900">
+                            Aksi
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -141,10 +144,21 @@
                             <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
                                 {{ $item->created_at?->format('d M Y') ?? '-' }}
                             </td>
+                            <td class="whitespace-nowrap px-6 py-4 text-right">
+                                <a href="{{ route('admin.pengguna.show', $item) }}" wire:navigate
+                                    title="Detail pengguna"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                        <circle cx="12" cy="12" r="2.5" />
+                                    </svg>
+                                </a>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-16 text-center">
+                            <td colspan="7" class="px-6 py-16 text-center">
                                 <div class="mx-auto max-w-sm">
                                     <div
                                         class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">

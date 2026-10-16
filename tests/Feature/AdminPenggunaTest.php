@@ -3,6 +3,7 @@
 use App\Livewire\Admin\Pengguna\CreateKepalaDesa;
 use App\Livewire\Admin\Pengguna\CreateMasyarakat;
 use App\Livewire\Admin\Pengguna\CreatePerangkatDesa;
+use App\Livewire\Admin\Pengguna\Detail;
 use App\Livewire\Admin\Pengguna\Index;
 use App\Models\Penduduk;
 use App\Models\User;
@@ -342,4 +343,205 @@ it('membersihkan aset Cloudinary yatim saat transaksi pembuatan masyarakat gagal
 
     expect(Penduduk::where('nik', $payload['nik'])->exists())->toBeFalse()
         ->and(User::where('email', $payload['email'])->exists())->toBeFalse();
+});
+
+it('mengalihkan tamu dari halaman detail pengguna', function () {
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    $this->get(route('admin.pengguna.show', $target))
+        ->assertRedirect(route('login'));
+});
+
+it('mengizinkan admin membuka halaman detail pengguna', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk();
+});
+
+it('memuat komponen detail dengan relasi penduduk melalui model binding', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    Penduduk::factory()->create(['user_id' => $warga->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->assertOk()
+        ->assertSee($warga->name);
+});
+
+it('menolak akses detail pengguna untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    $this->actingAs($pelaku)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertForbidden();
+})->with(['perangkat_desa', 'kepala_desa', 'masyarakat']);
+
+it('menampilkan informasi akun pada halaman detail', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'name' => 'Warga Detail Akun',
+        'email' => 'warga.detail@contoh.test',
+        'role' => 'masyarakat',
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee('Warga Detail Akun')
+        ->assertSee('warga.detail@contoh.test')
+        ->assertSee('Masyarakat')
+        ->assertSee('Aktif')
+        ->assertSee('Terverifikasi');
+});
+
+it('menampilkan label role manusia pada halaman detail', function (string $role, string $label) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => $role]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee($label);
+})->with([
+    ['admin', 'Admin'],
+    ['perangkat_desa', 'Perangkat Desa'],
+    ['kepala_desa', 'Kepala Desa'],
+    ['masyarakat', 'Masyarakat'],
+]);
+
+it('menampilkan status nonaktif dan email belum terverifikasi pada halaman detail', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => false,
+        'email_verified_at' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee('Nonaktif')
+        ->assertSee('Belum Terverifikasi');
+});
+
+it('menampilkan data penduduk pada halaman detail masyarakat', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'nama' => 'Budi Penduduk Detail',
+        'nik' => '3200000000000001',
+        'no_kk' => '3200000000000002',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $warga))
+        ->assertOk()
+        ->assertSee('Data Penduduk')
+        ->assertSee('Budi Penduduk Detail')
+        ->assertSee('3200000000000001')
+        ->assertSee('3200000000000002');
+});
+
+it('menampilkan foto penduduk dari accessor fotoUrl tanpa error', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'foto' => 'https://res.cloudinary.com/kxaypleu/image/upload/v1616/sideska/penduduk/detail.png',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $warga))
+        ->assertOk()
+        ->assertSee('https://res.cloudinary.com/kxaypleu/image/upload/v1616/sideska/penduduk/detail.png');
+});
+
+it('tidak error menampilkan penduduk tanpa foto', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'nama' => 'Tanpa Foto',
+        'foto' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $warga))
+        ->assertOk()
+        ->assertSee('Tanpa Foto');
+});
+
+it('menampilkan detail perangkat desa tanpa data penduduk', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $perangkat = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $perangkat))
+        ->assertOk()
+        ->assertSee('Pengguna ini tidak memiliki data penduduk.');
+});
+
+it('menampilkan detail kepala desa tanpa data penduduk', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $kepala = User::factory()->create(['role' => 'kepala_desa']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $kepala))
+        ->assertOk()
+        ->assertSee('Pengguna ini tidak memiliki data penduduk.');
+});
+
+it('tidak membocorkan hash password pada halaman detail', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertDontSee($target->getAuthPassword());
+});
+
+it('tidak membocorkan remember token pada halaman detail', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'remember_token' => 'RAHASIA-REMEMBER-TOKEN-999',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertDontSee('RAHASIA-REMEMBER-TOKEN-999');
+});
+
+it('tidak menampilkan field password atau kredensial pada halaman detail', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertDontSee('type="password"', false)
+        ->assertDontSee('name="password"', false)
+        ->assertDontSee('password_confirmation', false);
+});
+
+it('mendaftarkan route admin.pengguna.show dengan model binding yang benar', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    expect(route('admin.pengguna.show', $target))
+        ->toEndWith('/admin/pengguna/'.$target->id);
+
+    $this->actingAs($admin)
+        ->get('/admin/pengguna/'.$target->id)
+        ->assertOk();
 });

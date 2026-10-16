@@ -5,6 +5,7 @@ use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Pengguna\CreateKepalaDesa as AdminPenggunaCreateKepalaDesa;
 use App\Livewire\Admin\Pengguna\CreateMasyarakat as AdminPenggunaCreateMasyarakat;
 use App\Livewire\Admin\Pengguna\CreatePerangkatDesa as AdminPenggunaCreatePerangkatDesa;
+use App\Livewire\Admin\Pengguna\Detail as AdminPenggunaDetail;
 use App\Livewire\Admin\Pengguna\Index as AdminPenggunaIndex;
 use App\Livewire\KepalaDesa\Dashboard as KepalaDesaDashboard;
 use App\Livewire\KepalaDesa\DetailPersetujuan;
@@ -58,6 +59,10 @@ Route::get('/admin/pengguna/perangkat-desa/create', AdminPenggunaCreatePerangkat
 Route::get('/admin/pengguna/kepala-desa/create', AdminPenggunaCreateKepalaDesa::class)
     ->middleware(['auth', 'active', 'role:admin'])
     ->name('admin.pengguna.kepala-desa.create');
+
+Route::get('/admin/pengguna/{user}', AdminPenggunaDetail::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.pengguna.show');
 
 Route::get('/perangkat-desa/dashboard', PerangkatDesaDashboard::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])
