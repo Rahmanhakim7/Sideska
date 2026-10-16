@@ -24,6 +24,32 @@
         </div>
     </div>
 
+    @if (session()->has('success'))
+        <div
+            class="flex items-start gap-3 rounded-xl border border-emerald-200
+                   bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div
+            class="flex items-start gap-3 rounded-xl border border-red-200
+                   bg-red-50 px-4 py-3 text-sm text-red-700">
+            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
     <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
         <div class="flex items-center gap-4">
             <div class="min-w-0 flex-1">
@@ -144,16 +170,41 @@
                             <td class="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
                                 {{ $item->created_at?->format('d M Y') ?? '-' }}
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-right">
-                                <a href="{{ route('admin.pengguna.show', $item) }}" wire:navigate
-                                    title="Detail pengguna"
-                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
-                                        <circle cx="12" cy="12" r="2.5" />
-                                    </svg>
-                                </a>
+                            <td class="whitespace-nowrap px-6 py-4">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('admin.pengguna.show', $item) }}" wire:navigate
+                                        title="Detail pengguna"
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                            <circle cx="12" cy="12" r="2.5" />
+                                        </svg>
+                                    </a>
+
+                                    @if ($item->role !== 'admin')
+                                        <button type="button" wire:click="toggleStatus({{ $item->id }})"
+                                            wire:loading.attr="disabled"
+                                            wire:confirm="{{ $item->is_active ? 'Apakah Anda yakin ingin menonaktifkan pengguna ini?' : 'Apakah Anda yakin ingin mengaktifkan pengguna ini?' }}"
+                                            title="{{ $item->is_active ? 'Nonaktifkan pengguna' : 'Aktifkan pengguna' }}"
+                                            class="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 {{ $item->is_active ? 'border-red-200 bg-white text-red-600 hover:border-red-300 hover:bg-red-50' : 'border-emerald-200 bg-white text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50' }}">
+                                            @if ($item->is_active)
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                </svg>
+                                            @else
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                            @endif
+                                            <span>{{ $item->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</span>
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @empty

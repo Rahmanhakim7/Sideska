@@ -2,7 +2,10 @@
 
 namespace App\Livewire\Admin\Pengguna;
 
+use App\Enums\StatusKependudukan;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -17,6 +20,73 @@ class Index extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function toggleStatus(User $user): void
+    {
+        $pelaku = Auth::user();
+
+        if ($pelaku === null || $pelaku->role !== 'admin') {
+            session()->flash(
+                'error',
+                'Hanya admin yang dapat mengubah status pengguna.'
+            );
+
+            return;
+        }
+
+        if (Auth::id() === $user->id) {
+            session()->flash(
+                'error',
+                'Anda tidak dapat mengubah status akun Anda sendiri.'
+            );
+
+            return;
+        }
+
+        if ($user->role === 'admin') {
+            session()->flash(
+                'error',
+                'Akun dengan role admin tidak dapat diubah statusnya melalui halaman ini.'
+            );
+
+            return;
+        }
+
+        if (! $user->is_active && $user->penduduk?->status_kependudukan === StatusKependudukan::PINDAH->value) {
+            session()->flash(
+                'error',
+                'Pengguna ini memiliki penduduk berstatus Pindah dan harus diproses melalui workflow mutasi yang sesuai.'
+            );
+
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($user) {
+                $user->is_active = ! $user->is_active;
+                $user->save();
+
+                if (! $user->is_active) {
+                    DB::table('sessions')
+                        ->where('user_id', $user->id)
+                        ->delete();
+                }
+            });
+
+            session()->flash(
+                'success',
+                $user->is_active
+                    ? 'Pengguna berhasil diaktifkan.'
+                    : 'Pengguna berhasil dinonaktifkan.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash(
+                'error',
+                'Status pengguna gagal diperbarui. Silakan coba lagi.'
+            );
+        }
     }
 
     public function render()

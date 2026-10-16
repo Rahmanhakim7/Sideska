@@ -5,11 +5,14 @@ use App\Livewire\Admin\Pengguna\CreateMasyarakat;
 use App\Livewire\Admin\Pengguna\CreatePerangkatDesa;
 use App\Livewire\Admin\Pengguna\Detail;
 use App\Livewire\Admin\Pengguna\Index;
+use App\Models\MutasiPenduduk;
 use App\Models\Penduduk;
+use App\Models\PengajuanSurat;
 use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\CloudinaryEngine;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -544,4 +547,270 @@ it('mendaftarkan route admin.pengguna.show dengan model binding yang benar', fun
     $this->actingAs($admin)
         ->get('/admin/pengguna/'.$target->id)
         ->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Phase 7 — Aktif / Nonaktif User
+|--------------------------------------------------------------------------
+*/
+
+it('mengalihkan tamu dari halaman admin pengguna', function () {
+    $this->get(route('admin.pengguna'))
+        ->assertRedirect(route('login'));
+});
+
+it('menolak akses halaman admin pengguna untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+
+    $this->actingAs($pelaku)
+        ->get(route('admin.pengguna'))
+        ->assertForbidden();
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menolak toggleStatus yang dipanggil langsung untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+
+    Livewire::actingAs($pelaku)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id)
+        ->assertSee('Hanya admin yang dapat mengubah status pengguna.');
+
+    expect($target->fresh()->is_active)->toBeTrue();
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('mengizinkan admin mengakses halaman admin pengguna', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna'))
+        ->assertOk();
+});
+
+it('menonaktifkan user aktif melalui toggle', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id)
+        ->assertSee('Pengguna berhasil dinonaktifkan.');
+
+    expect($target->fresh()->is_active)->toBeFalse();
+});
+
+it('menampilkan pesan sukses dan tetap di halaman admin pengguna setelah toggle', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'perangkat_desa', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id)
+        ->assertSee('Pengguna berhasil dinonaktifkan.')
+        ->assertSet('search', '');
+});
+
+it('menolak login user yang dinonaktifkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => true,
+        'password' => Hash::make('password'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    expect($target->fresh()->is_active)->toBeFalse()
+        ->and(Auth::attempt([
+            'email' => $target->email,
+            'password' => 'password',
+            'is_active' => true,
+        ]))->toBeFalse();
+});
+
+it('menghapus session user target ketika dinonaktifkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+
+    DB::table('sessions')->insert([
+        [
+            'id' => 'session-target-7',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+        [
+            'id' => 'session-admin-7',
+            'user_id' => $admin->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    expect(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(0)
+        ->and(DB::table('sessions')->where('user_id', $admin->id)->count())->toBe(1);
+});
+
+it('menjaga user lain tetap aktif setelah menonaktifkan target', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+    $lain = User::factory()->create(['role' => 'perangkat_desa', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    expect($target->fresh()->is_active)->toBeFalse()
+        ->and($lain->fresh()->is_active)->toBeTrue()
+        ->and($admin->fresh()->is_active)->toBeTrue();
+});
+
+it('mengaktifkan kembali user nonaktif', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => false]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id)
+        ->assertSee('Pengguna berhasil diaktifkan.');
+
+    expect($target->fresh()->is_active)->toBeTrue();
+});
+
+it('memungkinkan user login kembali setelah diaktifkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => false,
+        'password' => Hash::make('password'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    expect($target->fresh()->is_active)->toBeTrue()
+        ->and(Auth::attempt([
+            'email' => $target->email,
+            'password' => 'password',
+            'is_active' => true,
+        ]))->toBeTrue();
+
+    Auth::logout();
+});
+
+it('menolak admin menonaktifkan dirinya sendiri', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $admin->id)
+        ->assertSee('Anda tidak dapat mengubah status akun Anda sendiri.');
+
+    expect($admin->fresh()->is_active)->toBeTrue();
+});
+
+it('menolak admin menargetkan user role admin lain', function () {
+    $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    $targetAdmin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $targetAdmin->id)
+        ->assertSee('Akun dengan role admin tidak dapat diubah statusnya melalui halaman ini.');
+
+    expect($targetAdmin->fresh()->is_active)->toBeTrue()
+        ->and(User::where('role', 'admin')->where('is_active', true)->count())->toBeGreaterThanOrEqual(1);
+});
+
+it('menonaktifkan masyarakat biasa dengan penduduk tetap', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+    Penduduk::factory()->create(['user_id' => $warga->id, 'status_kependudukan' => 'Tetap']);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $warga->id);
+
+    expect($warga->fresh()->is_active)->toBeFalse();
+});
+
+it('menolak reaktivasi masyarakat berstatus Pindah', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat', 'is_active' => false]);
+    Penduduk::factory()->create(['user_id' => $warga->id, 'status_kependudukan' => 'Pindah']);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $warga->id)
+        ->assertSee('berstatus Pindah');
+
+    expect($warga->fresh()->is_active)->toBeFalse()
+        ->and($warga->penduduk->status_kependudukan)->toBe('Pindah');
+});
+
+it('tidak mengubah status kependudukan saat toggle', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id, 'status_kependudukan' => 'Tetap']);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $warga->id);
+
+    expect($warga->fresh()->is_active)->toBeFalse()
+        ->and($penduduk->fresh()->status_kependudukan)->toBe('Tetap');
+});
+
+it('tidak mengubah data pengajuan surat dan mutasi saat toggle', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id, 'status_kependudukan' => 'Tetap']);
+    PengajuanSurat::factory()->create(['penduduk_id' => $penduduk->id]);
+    MutasiPenduduk::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $warga->id);
+
+    expect($warga->fresh()->is_active)->toBeFalse()
+        ->and(PengajuanSurat::where('penduduk_id', $penduduk->id)->count())->toBe(1)
+        ->and(MutasiPenduduk::where('penduduk_id', $penduduk->id)->count())->toBe(1)
+        ->and($penduduk->fresh()->user_id)->toBe($warga->id);
+});
+
+it('detail user tetap dapat dibuka setelah toggle status', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee($target->name);
+});
+
+it('pagination tetap berfungsi setelah fitur toggle ditambahkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->count(20)->create(['role' => 'masyarakat']);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->assertSee('Berikutnya')
+        ->call('nextPage')
+        ->assertSet('paginators.page', 2);
 });
