@@ -468,6 +468,54 @@
     @endif
 
     @if ($user->role !== 'admin')
+        {{-- EDIT AKUN --}}
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h2 class="text-base font-bold text-slate-800">
+                    Edit Akun
+                </h2>
+                <p class="mt-0.5 text-sm text-slate-500">
+                    Perbarui nama dan email akun ini. Email merupakan identitas login pengguna.
+                </p>
+            </div>
+
+            <form wire:submit="perbaruiAkun" class="px-6 py-6">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                        <label for="name" class="mb-2 block text-sm font-semibold text-slate-700">
+                            Nama
+                        </label>
+                        <input id="name" type="text" wire:model="name" autocomplete="name"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        @error('name')
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">
+                            Email
+                        </label>
+                        <input id="email" type="email" wire:model="email" autocomplete="email"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        @error('email')
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1.5 text-xs text-slate-500">
+                            Setelah diubah, pengguna harus login menggunakan email baru ini.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
+                        Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+
         {{-- RESET PASSWORD --}}
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="border-b border-slate-200 px-6 py-4">

@@ -1272,3 +1272,442 @@ it('pagination tetap berfungsi setelah fitur reset password ditambahkan', functi
         ->call('nextPage')
         ->assertSet('paginators.page', 2);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Admin Phase 9 — Edit User (Edit Akun)
+|--------------------------------------------------------------------------
+*/
+
+it('menolak perbaruiAkun yang dipanggil langsung untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'name' => 'Nama Asli',
+        'email' => 'asli.edit@contoh.test',
+    ]);
+
+    Livewire::actingAs($pelaku)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Diubah')
+        ->set('email', 'diubah.edit@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect($target->fresh()->name)->toBe('Nama Asli')
+        ->and($target->fresh()->email)->toBe('asli.edit@contoh.test');
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menolak perbaruiAkun ketika tidak ada pengguna terautentikasi', function () {
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'name' => 'Nama Asli',
+        'email' => 'asli.guest@contoh.test',
+    ]);
+
+    Livewire::test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Diubah')
+        ->set('email', 'diubah.guest@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect($target->fresh()->name)->toBe('Nama Asli')
+        ->and($target->fresh()->email)->toBe('asli.guest@contoh.test');
+});
+
+it('mengizinkan admin memperbarui akun target non-admin', function (string $role) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => $role,
+        'name' => 'Nama Lama',
+        'email' => 'lama.'.$role.'@contoh.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'baru.'.$role.'@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertHasNoErrors()
+        ->assertSee('Data akun pengguna berhasil diperbarui.');
+
+    expect($target->fresh()->name)->toBe('Nama Baru')
+        ->and($target->fresh()->email)->toBe('baru.'.$role.'@contoh.test');
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menolak admin memperbarui akun admin lain', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $targetAdmin = User::factory()->create([
+        'role' => 'admin',
+        'name' => 'Admin Lain',
+        'email' => 'admin.lain@contoh.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $targetAdmin])
+        ->set('name', 'Diretas')
+        ->set('email', 'diretas@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertSee('Akun dengan role admin tidak dapat diedit melalui halaman ini.');
+
+    expect($targetAdmin->fresh()->name)->toBe('Admin Lain')
+        ->and($targetAdmin->fresh()->email)->toBe('admin.lain@contoh.test');
+});
+
+it('menolak admin memperbarui akun dirinya sendiri', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'name' => 'Admin Sendiri',
+        'email' => 'admin.sendiri@contoh.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $admin])
+        ->set('name', 'Diubah Sendiri')
+        ->set('email', 'diubah.sendiri@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertSee('Akun dengan role admin tidak dapat diedit melalui halaman ini.');
+
+    expect($admin->fresh()->name)->toBe('Admin Sendiri')
+        ->and($admin->fresh()->email)->toBe('admin.sendiri@contoh.test');
+});
+
+it('tidak menampilkan form edit akun pada detail target admin', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $targetAdmin = User::factory()->create(['role' => 'admin']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $targetAdmin))
+        ->assertOk()
+        ->assertDontSee('Edit Akun')
+        ->assertDontSee('Simpan Perubahan');
+});
+
+it('menampilkan form edit akun pada detail target non-admin', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee('Edit Akun')
+        ->assertSee('Simpan Perubahan');
+});
+
+it('memvalidasi nama wajib diisi saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'name' => 'Nama Asli']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', '')
+        ->set('email', $target->email)
+        ->call('perbaruiAkun')
+        ->assertHasErrors(['name']);
+
+    expect($target->fresh()->name)->toBe('Nama Asli');
+});
+
+it('memvalidasi panjang maksimal nama saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'name' => 'Nama Asli']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', str_repeat('a', 256))
+        ->set('email', $target->email)
+        ->call('perbaruiAkun')
+        ->assertHasErrors(['name']);
+
+    expect($target->fresh()->name)->toBe('Nama Asli');
+});
+
+it('memvalidasi email wajib diisi saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'email' => 'asli.wajib@contoh.test']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', $target->name)
+        ->set('email', '')
+        ->call('perbaruiAkun')
+        ->assertHasErrors(['email']);
+
+    expect($target->fresh()->email)->toBe('asli.wajib@contoh.test');
+});
+
+it('memvalidasi format email saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'email' => 'asli.format@contoh.test']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', $target->name)
+        ->set('email', 'bukan-email')
+        ->call('perbaruiAkun')
+        ->assertHasErrors(['email']);
+
+    expect($target->fresh()->email)->toBe('asli.format@contoh.test');
+});
+
+it('menolak email yang sudah digunakan pengguna lain saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'email' => 'asli.duplikat@contoh.test']);
+    User::factory()->create(['email' => 'dipakai.lain@contoh.test']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', $target->name)
+        ->set('email', 'dipakai.lain@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertHasErrors(['email']);
+
+    expect($target->fresh()->email)->toBe('asli.duplikat@contoh.test')
+        ->and(User::where('email', 'dipakai.lain@contoh.test')->count())->toBe(1);
+});
+
+it('menerima email yang tidak diubah saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'name' => 'Nama Lama',
+        'email' => 'tetap.sama@contoh.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'tetap.sama@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertHasNoErrors();
+
+    expect($target->fresh()->name)->toBe('Nama Baru')
+        ->and($target->fresh()->email)->toBe('tetap.sama@contoh.test');
+});
+
+it('tidak mengubah role saat edit akun', function (string $role) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => $role]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'role.'.$role.'@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($target->fresh()->role)->toBe($role);
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('tidak mengubah is_active saat edit akun', function (bool $aktif) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => $aktif]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'status.'.($aktif ? 'aktif' : 'nonaktif').'@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($target->fresh()->is_active)->toBe($aktif);
+})->with([true, false]);
+
+it('tidak mengubah password hash saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $target->password;
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'password.tetap@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($target->fresh()->password)->toBe($hashSebelum)
+        ->and(Hash::check('passwordlama', $target->fresh()->password))->toBeTrue();
+});
+
+it('tidak mengubah email_verified_at saat email berubah', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'email' => 'verified.lama@contoh.test',
+        'email_verified_at' => now()->subDays(3),
+    ]);
+    $verifiedSebelum = $target->email_verified_at;
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', $target->name)
+        ->set('email', 'verified.baru@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($target->fresh()->email)->toBe('verified.baru@contoh.test')
+        ->and($target->fresh()->email_verified_at?->timestamp)->toBe($verifiedSebelum?->timestamp);
+});
+
+it('tidak mengubah remember_token saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'perangkat_desa',
+        'remember_token' => 'TOKEN-TETAP-PHASE-9',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'token.tetap@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($target->fresh()->remember_token)->toBe('TOKEN-TETAP-PHASE-9');
+});
+
+it('tidak menghapus session target saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    DB::table('sessions')->insert([
+        'id' => 'session-target-9',
+        'user_id' => $target->id,
+        'ip_address' => '127.0.0.1',
+        'user_agent' => 'PHPUnit',
+        'payload' => base64_encode('payload'),
+        'last_activity' => time(),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'session.tetap@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(1);
+});
+
+it('tidak mengubah data penduduk saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'nik' => '3200000000009999',
+        'nama' => 'Nama Kependudukan',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->set('name', 'Nama Akun Baru')
+        ->set('email', 'penduduk.tetap@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect($penduduk->fresh()->user_id)->toBe($warga->id)
+        ->and($penduduk->fresh()->nama)->toBe('Nama Kependudukan')
+        ->and($penduduk->fresh()->nik)->toBe('3200000000009999');
+});
+
+it('tidak mengubah pengajuan surat dan mutasi saat edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+    PengajuanSurat::factory()->create(['penduduk_id' => $penduduk->id]);
+    MutasiPenduduk::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'histori.tetap@contoh.test')
+        ->call('perbaruiAkun');
+
+    expect(PengajuanSurat::where('penduduk_id', $penduduk->id)->count())->toBe(1)
+        ->and(MutasiPenduduk::where('penduduk_id', $penduduk->id)->count())->toBe(1);
+});
+
+it('tidak membocorkan hash password dan remember token pada form edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'remember_token' => 'RAHASIA-REMEMBER-TOKEN-999',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee('Edit Akun')
+        ->assertDontSee($target->getAuthPassword())
+        ->assertDontSee('RAHASIA-REMEMBER-TOKEN-999');
+});
+
+it('menampilkan data terbaru tanpa redirect setelah edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'kepala_desa',
+        'name' => 'Nama Lama',
+        'email' => 'lama.tampil@contoh.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru Tampil')
+        ->set('email', 'baru.tampil@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertSet('name', 'Nama Baru Tampil')
+        ->assertSet('email', 'baru.tampil@contoh.test')
+        ->assertSee('Nama Baru Tampil')
+        ->assertSee('baru.tampil@contoh.test');
+});
+
+it('reset password tetap berfungsi setelah edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    $component = Livewire::actingAs($admin)->test(Detail::class, ['user' => $target]);
+
+    $component
+        ->set('name', 'Nama Baru')
+        ->set('email', 'edit.dan.reset@contoh.test')
+        ->call('perbaruiAkun')
+        ->assertHasNoErrors();
+
+    $component
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertHasNoErrors()
+        ->assertSee('Password pengguna berhasil direset.');
+
+    expect(Hash::check('passwordbaru123', $target->fresh()->password))->toBeTrue()
+        ->and($target->fresh()->email)->toBe('edit.dan.reset@contoh.test');
+});
+
+it('toggle aktif nonaktif tetap berfungsi setelah edit akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat', 'is_active' => true]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('name', 'Nama Baru')
+        ->set('email', 'edit.dan.toggle@contoh.test')
+        ->call('perbaruiAkun');
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id)
+        ->assertSee('Pengguna berhasil dinonaktifkan.');
+
+    expect($target->fresh()->is_active)->toBeFalse()
+        ->and($target->fresh()->email)->toBe('edit.dan.toggle@contoh.test');
+});
+
+it('detail user tetap dapat dibuka setelah fitur edit akun ditambahkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->assertOk()
+        ->assertSee($target->name);
+});
