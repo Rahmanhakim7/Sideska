@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Surat\SuratPdfController;
+use App\Livewire\Admin\AuditLog\Index as AdminAuditLogIndex;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Pengguna\CreateKepalaDesa as AdminPenggunaCreateKepalaDesa;
 use App\Livewire\Admin\Pengguna\CreateMasyarakat as AdminPenggunaCreateMasyarakat;
@@ -63,6 +64,10 @@ Route::get('/admin/pengguna/kepala-desa/create', AdminPenggunaCreateKepalaDesa::
 Route::get('/admin/pengguna/{user}', AdminPenggunaDetail::class)
     ->middleware(['auth', 'active', 'role:admin'])
     ->name('admin.pengguna.show');
+
+Route::get('/admin/audit-log', AdminAuditLogIndex::class)
+    ->middleware(['auth', 'active', 'role:admin'])
+    ->name('admin.audit-log');
 
 Route::get('/perangkat-desa/dashboard', PerangkatDesaDashboard::class)
     ->middleware(['auth', 'active', 'role:perangkat_desa'])

@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Admin\Pengguna;
 
+use App\Enums\AuditAction;
 use App\Enums\StatusKependudukan;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -63,7 +65,7 @@ class Index extends Component
         }
 
         try {
-            DB::transaction(function () use ($user) {
+            DB::transaction(function () use ($user, $pelaku) {
                 $user->is_active = ! $user->is_active;
                 $user->save();
 
@@ -72,6 +74,16 @@ class Index extends Component
                         ->where('user_id', $user->id)
                         ->delete();
                 }
+
+                app(AuditLogService::class)->catat(
+                    $pelaku,
+                    $user->is_active
+                        ? AuditAction::USER_ACTIVATED
+                        : AuditAction::USER_DEACTIVATED,
+                    'Admin '.($user->is_active ? 'mengaktifkan' : 'menonaktifkan')
+                        .' akun "'.$user->name.'"',
+                    $user
+                );
             });
 
             session()->flash(

@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Admin\Pengguna;
 
+use App\Enums\AuditAction;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -69,10 +71,36 @@ class Detail extends Component
         ]);
 
         try {
-            DB::transaction(function () {
+            $namaLama = $this->user->name;
+            $emailLama = $this->user->email;
+
+            DB::transaction(function () use ($pelaku, $namaLama, $emailLama) {
                 $this->user->name = $this->name;
                 $this->user->email = $this->email;
                 $this->user->save();
+
+                $perubahan = [];
+
+                if ($namaLama !== $this->user->name) {
+                    $perubahan[] = 'nama: "'.$namaLama.'" menjadi "'.$this->user->name.'"';
+                }
+
+                if ($emailLama !== $this->user->email) {
+                    $perubahan[] = 'email: "'.$emailLama.'" menjadi "'.$this->user->email.'"';
+                }
+
+                $deskripsi = 'Admin mengubah akun "'.$this->user->name.'"';
+
+                if ($perubahan !== []) {
+                    $deskripsi .= ' ('.implode(', ', $perubahan).')';
+                }
+
+                app(AuditLogService::class)->catat(
+                    $pelaku,
+                    AuditAction::USER_UPDATED,
+                    $deskripsi,
+                    $this->user
+                );
             });
 
             $this->user->refresh();
@@ -130,7 +158,7 @@ class Detail extends Component
         ]);
 
         try {
-            DB::transaction(function () {
+            DB::transaction(function () use ($pelaku) {
                 $this->user->password = $this->password;
                 $this->user->remember_token = Str::random(60);
                 $this->user->save();
@@ -138,6 +166,13 @@ class Detail extends Component
                 DB::table('sessions')
                     ->where('user_id', $this->user->id)
                     ->delete();
+
+                app(AuditLogService::class)->catat(
+                    $pelaku,
+                    AuditAction::USER_PASSWORD_RESET,
+                    'Admin mereset password akun "'.$this->user->name.'"',
+                    $this->user
+                );
             });
 
             $this->password = '';
@@ -212,7 +247,7 @@ class Detail extends Component
         }
 
         try {
-            DB::transaction(function () {
+            DB::transaction(function () use ($pelaku) {
                 DB::table('sessions')
                     ->where('user_id', $this->user->id)
                     ->delete();
@@ -225,6 +260,14 @@ class Detail extends Component
                     ->where('notifiable_type', User::class)
                     ->where('notifiable_id', $this->user->id)
                     ->delete();
+
+                app(AuditLogService::class)->catat(
+                    $pelaku,
+                    AuditAction::USER_DELETED,
+                    'Admin menghapus akun "'.$this->user->name
+                        .'" dengan role '.$this->user->role,
+                    $this->user
+                );
 
                 $this->user->delete();
             });
