@@ -50,6 +50,19 @@
         </a>
     </div>
 
+    {{-- FLASH --}}
+    @if (session()->has('success'))
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-700">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-sm text-red-700">
+            {{ session('error') }}
+        </div>
+    @endif
+
     {{-- INFORMASI AKUN --}}
     <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-6 py-4">
@@ -451,6 +464,55 @@
                     Akun {{ $roleLabel }} tidak terhubung dengan data kependudukan.
                 </p>
             </div>
+        </div>
+    @endif
+
+    @if ($user->role !== 'admin')
+        {{-- RESET PASSWORD --}}
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-200 px-6 py-4">
+                <h2 class="text-base font-bold text-slate-800">
+                    Reset Password
+                </h2>
+                <p class="mt-0.5 text-sm text-slate-500">
+                    Atur ulang password akun ini. Sesi aktif pengguna akan dihapus dan wajib login ulang.
+                </p>
+            </div>
+
+            <form wire:submit="resetPassword"
+                wire:confirm="Apakah Anda yakin ingin mengatur ulang password pengguna ini?" class="px-6 py-6">
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div>
+                        <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">
+                            Password Baru
+                        </label>
+                        <input id="password" type="password" wire:model="password" autocomplete="new-password"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        @error('password')
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="password_confirmation" class="mb-2 block text-sm font-semibold text-slate-700">
+                            Konfirmasi Password Baru
+                        </label>
+                        <input id="password_confirmation" type="password" wire:model="password_confirmation"
+                            autocomplete="new-password"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                        @error('password_confirmation')
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
+                        Reset Password
+                    </button>
+                </div>
+            </form>
         </div>
     @endif
 

@@ -525,16 +525,16 @@ it('tidak membocorkan remember token pada halaman detail', function () {
         ->assertDontSee('RAHASIA-REMEMBER-TOKEN-999');
 });
 
-it('tidak menampilkan field password atau kredensial pada halaman detail', function () {
+it('tidak menampilkan form reset password pada halaman detail admin', function () {
     $admin = User::factory()->create(['role' => 'admin']);
-    $target = User::factory()->create(['role' => 'masyarakat']);
+    $target = User::factory()->create(['role' => 'admin']);
 
     $this->actingAs($admin)
         ->get(route('admin.pengguna.show', $target))
         ->assertOk()
+        ->assertDontSee('Reset Password')
         ->assertDontSee('type="password"', false)
-        ->assertDontSee('name="password"', false)
-        ->assertDontSee('password_confirmation', false);
+        ->assertDontSee('name="password"', false);
 });
 
 it('mendaftarkan route admin.pengguna.show dengan model binding yang benar', function () {
@@ -805,6 +805,464 @@ it('detail user tetap dapat dibuka setelah toggle status', function () {
 });
 
 it('pagination tetap berfungsi setelah fitur toggle ditambahkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->count(20)->create(['role' => 'masyarakat']);
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->assertSee('Berikutnya')
+        ->call('nextPage')
+        ->assertSet('paginators.page', 2);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Phase 8 — Reset Password User
+|--------------------------------------------------------------------------
+*/
+
+it('menolak reset password yang dipanggil langsung untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $target->password;
+
+    Livewire::actingAs($pelaku)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect($target->fresh()->password)->toBe($hashSebelum)
+        ->and(Hash::check('passwordlama', $target->fresh()->password))->toBeTrue();
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menolak reset password ketika tidak ada pengguna terautentikasi', function () {
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $target->password;
+
+    Livewire::test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect($target->fresh()->password)->toBe($hashSebelum);
+});
+
+it('mengizinkan admin mereset password user masyarakat', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertHasNoErrors()
+        ->assertSee('Password pengguna berhasil direset.');
+
+    expect(Hash::check('passwordbaru123', $target->fresh()->password))->toBeTrue()
+        ->and(Hash::check('passwordlama', $target->fresh()->password))->toBeFalse();
+});
+
+it('menyimpan password baru sebagai hash dan bukan plaintext', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'perangkat_desa',
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    $tersimpan = $target->fresh()->password;
+
+    expect($tersimpan)->not->toBe('passwordbaru123')
+        ->and($tersimpan)->not->toBe($target->getAuthPassword())
+        ->and(Hash::check('passwordbaru123', $tersimpan))->toBeTrue();
+});
+
+it('membuat password lama tidak valid dan password baru valid untuk login', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => true,
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect(Auth::attempt([
+        'email' => $target->email,
+        'password' => 'passwordlama',
+        'is_active' => true,
+    ]))->toBeFalse();
+
+    expect(Auth::attempt([
+        'email' => $target->email,
+        'password' => 'passwordbaru123',
+        'is_active' => true,
+    ]))->toBeTrue();
+
+    Auth::logout();
+});
+
+it('meregenerasi remember token setelah reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'kepala_desa',
+        'password' => Hash::make('passwordlama'),
+        'remember_token' => 'TOKEN-LAMA-123',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect($target->fresh()->remember_token)->not->toBe('TOKEN-LAMA-123')
+        ->and($target->fresh()->remember_token)->not->toBeNull();
+});
+
+it('menolak reset password untuk target role admin', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $targetAdmin = User::factory()->create([
+        'role' => 'admin',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $targetAdmin->password;
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $targetAdmin])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Akun dengan role admin tidak dapat direset password melalui halaman ini.');
+
+    expect($targetAdmin->fresh()->password)->toBe($hashSebelum)
+        ->and(Hash::check('passwordlama', $targetAdmin->fresh()->password))->toBeTrue();
+});
+
+it('menolak admin mereset password dirinya sendiri', function () {
+    $admin = User::factory()->create([
+        'role' => 'admin',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $admin->password;
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $admin])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Akun dengan role admin tidak dapat direset password melalui halaman ini.');
+
+    expect($admin->fresh()->password)->toBe($hashSebelum);
+});
+
+it('menghapus semua session user target setelah reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    DB::table('sessions')->insert([
+        [
+            'id' => 'session-target-8a',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+        [
+            'id' => 'session-target-8b',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.2',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(0);
+});
+
+it('tidak menghapus session admin dan user lain saat reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $lain = User::factory()->create(['role' => 'perangkat_desa']);
+
+    DB::table('sessions')->insert([
+        [
+            'id' => 'session-admin-8',
+            'user_id' => $admin->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+        [
+            'id' => 'session-target-8',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+        [
+            'id' => 'session-lain-8',
+            'user_id' => $lain->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(0)
+        ->and(DB::table('sessions')->where('user_id', $admin->id)->count())->toBe(1)
+        ->and(DB::table('sessions')->where('user_id', $lain->id)->count())->toBe(1);
+});
+
+it('tidak mengubah role saat reset password', function (string $role) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => $role,
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect($target->fresh()->role)->toBe($role);
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menjaga user aktif tetap aktif setelah reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'perangkat_desa',
+        'is_active' => true,
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect($target->fresh()->is_active)->toBeTrue();
+});
+
+it('menjaga user nonaktif tetap nonaktif dan tetap gagal login setelah reset', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => false,
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Password pengguna berhasil direset.');
+
+    expect($target->fresh()->is_active)->toBeFalse()
+        ->and(Hash::check('passwordbaru123', $target->fresh()->password))->toBeTrue()
+        ->and(Auth::attempt([
+            'email' => $target->email,
+            'password' => 'passwordbaru123',
+            'is_active' => true,
+        ]))->toBeFalse();
+});
+
+it('memungkinkan login dengan password baru setelah user diaktifkan kembali', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => false,
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect($target->fresh()->is_active)->toBeFalse();
+
+    Livewire::actingAs($admin)
+        ->test(Index::class)
+        ->call('toggleStatus', $target->id);
+
+    expect($target->fresh()->is_active)->toBeTrue()
+        ->and(Auth::attempt([
+            'email' => $target->email,
+            'password' => 'passwordbaru123',
+            'is_active' => true,
+        ]))->toBeTrue();
+
+    Auth::logout();
+});
+
+it('tidak mengubah data penduduk, pengajuan, dan mutasi saat reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => true,
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $penduduk = Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'status_kependudukan' => 'Tetap',
+    ]);
+    PengajuanSurat::factory()->create(['penduduk_id' => $penduduk->id]);
+    MutasiPenduduk::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword');
+
+    expect($penduduk->fresh()->user_id)->toBe($warga->id)
+        ->and($penduduk->fresh()->status_kependudukan)->toBe('Tetap')
+        ->and(PengajuanSurat::where('penduduk_id', $penduduk->id)->count())->toBe(1)
+        ->and(MutasiPenduduk::where('penduduk_id', $penduduk->id)->count())->toBe(1);
+});
+
+it('mengizinkan reset password masyarakat berstatus Pindah tanpa mengubah statusnya', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create([
+        'role' => 'masyarakat',
+        'is_active' => false,
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $penduduk = Penduduk::factory()->create([
+        'user_id' => $warga->id,
+        'status_kependudukan' => 'Pindah',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSee('Password pengguna berhasil direset.');
+
+    expect(Hash::check('passwordbaru123', $warga->fresh()->password))->toBeTrue()
+        ->and($warga->fresh()->is_active)->toBeFalse()
+        ->and($penduduk->fresh()->status_kependudukan)->toBe('Pindah');
+});
+
+it('memvalidasi password dan konfirmasi saat reset password', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'password' => Hash::make('passwordlama'),
+    ]);
+    $hashSebelum = $target->password;
+
+    $component = Livewire::actingAs($admin)->test(Detail::class, ['user' => $target]);
+
+    $component
+        ->set('password', 'pendek')
+        ->set('password_confirmation', 'pendek')
+        ->call('resetPassword')
+        ->assertHasErrors(['password', 'password_confirmation']);
+
+    $component
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'berbeda12345')
+        ->call('resetPassword')
+        ->assertHasErrors(['password']);
+
+    expect($target->fresh()->password)->toBe($hashSebelum);
+});
+
+it('mengosongkan field password setelah reset berhasil', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'perangkat_desa',
+        'password' => Hash::make('passwordlama'),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->set('password', 'passwordbaru123')
+        ->set('password_confirmation', 'passwordbaru123')
+        ->call('resetPassword')
+        ->assertSet('password', '')
+        ->assertSet('password_confirmation', '');
+});
+
+it('detail user tetap dapat dibuka setelah fitur reset password ditambahkan', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'masyarakat']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->assertOk()
+        ->assertSee($target->name);
+});
+
+it('tidak membocorkan hash password dan remember token pada halaman detail non-admin', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create([
+        'role' => 'masyarakat',
+        'remember_token' => 'RAHASIA-REMEMBER-TOKEN-888',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.pengguna.show', $target))
+        ->assertOk()
+        ->assertSee('Reset Password')
+        ->assertDontSee($target->getAuthPassword())
+        ->assertDontSee('RAHASIA-REMEMBER-TOKEN-888');
+});
+
+it('pagination tetap berfungsi setelah fitur reset password ditambahkan', function () {
     $admin = User::factory()->create(['role' => 'admin']);
     User::factory()->count(20)->create(['role' => 'masyarakat']);
 
