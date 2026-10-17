@@ -7,6 +7,7 @@ use App\Livewire\Admin\Pengguna\Detail;
 use App\Livewire\Admin\Pengguna\Index;
 use App\Models\MutasiPenduduk;
 use App\Models\Penduduk;
+use App\Models\PengajuanStatusHistory;
 use App\Models\PengajuanSurat;
 use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\CloudinaryEngine;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -1710,4 +1712,359 @@ it('detail user tetap dapat dibuka setelah fitur edit akun ditambahkan', functio
         ->test(Detail::class, ['user' => $target])
         ->assertOk()
         ->assertSee($target->name);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin Phase 10 — Delete User (perangkat_desa & kepala_desa)
+|--------------------------------------------------------------------------
+*/
+
+it('mengizinkan admin menghapus akun perangkat desa', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $lain = User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertRedirect(route('admin.pengguna'));
+
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::find($lain->id))->not->toBeNull();
+});
+
+it('mengizinkan admin menghapus akun kepala desa', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $lain = User::factory()->create(['role' => 'kepala_desa']);
+    $target = User::factory()->create(['role' => 'kepala_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertRedirect(route('admin.pengguna'));
+
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::find($lain->id))->not->toBeNull();
+});
+
+it('menolak hapus yang dipanggil langsung untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $target = User::factory()->create(['role' => 'kepala_desa']);
+
+    Livewire::actingAs($pelaku)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect(User::find($target->id))->not->toBeNull();
+})->with(['masyarakat', 'perangkat_desa', 'kepala_desa']);
+
+it('menolak hapus ketika tidak ada pengguna terautentikasi', function () {
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    Livewire::test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect(User::find($target->id))->not->toBeNull();
+});
+
+it('menolak admin menghapus akunnya sendiri', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $admin])
+        ->call('hapus')
+        ->assertSee('Anda tidak dapat menghapus akun Anda sendiri.');
+
+    expect(User::find($admin->id))->not->toBeNull();
+});
+
+it('menolak admin menghapus target dengan role admin', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $targetAdmin = User::factory()->create(['role' => 'admin']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $targetAdmin])
+        ->call('hapus')
+        ->assertSee('Akun dengan role ini tidak dapat dihapus melalui halaman ini.');
+
+    expect(User::find($targetAdmin->id))->not->toBeNull();
+});
+
+it('menolak admin menghapus target dengan role masyarakat', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $warga])
+        ->call('hapus')
+        ->assertSee('Akun dengan role ini tidak dapat dihapus melalui halaman ini.');
+
+    expect(User::find($warga->id))->not->toBeNull();
+});
+
+it('menolak menghapus akun perangkat desa terakhir', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee('Akun Perangkat Desa terakhir tidak dapat dihapus.');
+
+    expect(User::find($target->id))->not->toBeNull();
+});
+
+it('menolak menghapus akun kepala desa terakhir', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => 'kepala_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee('Akun Kepala Desa terakhir tidak dapat dihapus.');
+
+    expect(User::find($target->id))->not->toBeNull();
+});
+
+it('mengizinkan menghapus salah satu dari dua perangkat desa', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertRedirect(route('admin.pengguna'));
+
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::where('role', 'perangkat_desa')->count())->toBe(1);
+});
+
+it('mengizinkan menghapus salah satu dari dua kepala desa', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'kepala_desa']);
+    $target = User::factory()->create(['role' => 'kepala_desa']);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertRedirect(route('admin.pengguna'));
+
+    expect(User::find($target->id))->toBeNull()
+        ->and(User::where('role', 'kepala_desa')->count())->toBe(1);
+});
+
+it('menghapus semua session user target setelah hapus akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $lain = User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    DB::table('sessions')->insert([
+        [
+            'id' => 'session-hapus-target',
+            'user_id' => $target->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+        [
+            'id' => 'session-hapus-admin',
+            'user_id' => $admin->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'PHPUnit',
+            'payload' => base64_encode('payload'),
+            'last_activity' => time(),
+        ],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(0)
+        ->and(DB::table('sessions')->where('user_id', $admin->id)->count())->toBe(1)
+        ->and(User::find($lain->id))->not->toBeNull();
+});
+
+it('menghapus password reset token user target setelah hapus akun', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    DB::table('password_reset_tokens')->insert([
+        'email' => $target->email,
+        'token' => 'token-target',
+        'created_at' => now(),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(DB::table('password_reset_tokens')->where('email', $target->email)->count())->toBe(0);
+});
+
+it('menghapus notification user target dan menyisakan notifikasi user lain', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $lain = User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    DB::table('notifications')->insert([
+        [
+            'id' => (string) Str::uuid(),
+            'type' => 'App\Notifications\PengajuanStatusNotification',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $target->id,
+            'data' => json_encode([]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'id' => (string) Str::uuid(),
+            'type' => 'App\Notifications\PengajuanStatusNotification',
+            'notifiable_type' => User::class,
+            'notifiable_id' => $lain->id,
+            'data' => json_encode([]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(DB::table('notifications')->where('notifiable_id', $target->id)->count())->toBe(0)
+        ->and(DB::table('notifications')->where('notifiable_id', $lain->id)->count())->toBe(1);
+});
+
+it('mempertahankan pengajuan status history milik target dengan user_id menjadi null', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+    $pengajuan = PengajuanSurat::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    $history = PengajuanStatusHistory::create([
+        'pengajuan_surat_id' => $pengajuan->id,
+        'status_sebelum' => null,
+        'status_sesudah' => 'diproses',
+        'user_id' => $target->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    $history->refresh();
+
+    expect(PengajuanStatusHistory::find($history->id))->not->toBeNull()
+        ->and($history->user_id)->toBeNull()
+        ->and(PengajuanSurat::find($pengajuan->id))->not->toBeNull();
+});
+
+it('mempertahankan mutasi penduduk milik target dengan user_id menjadi null', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+    $mutasi = MutasiPenduduk::factory()->create([
+        'penduduk_id' => $penduduk->id,
+        'user_id' => $target->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    $mutasi->refresh();
+
+    expect(MutasiPenduduk::find($mutasi->id))->not->toBeNull()
+        ->and($mutasi->user_id)->toBeNull()
+        ->and(Penduduk::find($penduduk->id))->not->toBeNull();
+});
+
+it('tidak mengubah pengajuan surat milik masyarakat saat menghapus akun target', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+    $pengajuan = PengajuanSurat::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(PengajuanSurat::find($pengajuan->id))->not->toBeNull()
+        ->and(PengajuanSurat::find($pengajuan->id)->penduduk_id)->toBe($penduduk->id);
+});
+
+it('tidak mengubah penduduk milik masyarakat saat menghapus akun target', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(Penduduk::find($penduduk->id))->not->toBeNull()
+        ->and(Penduduk::find($penduduk->id)->user_id)->toBe($warga->id);
+});
+
+it('tidak mengubah mutasi milik masyarakat saat menghapus akun target', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    $warga = User::factory()->create(['role' => 'masyarakat']);
+    $penduduk = Penduduk::factory()->create(['user_id' => $warga->id]);
+    $mutasi = MutasiPenduduk::factory()->create(['penduduk_id' => $penduduk->id]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus');
+
+    expect(MutasiPenduduk::find($mutasi->id))->not->toBeNull()
+        ->and(MutasiPenduduk::find($mutasi->id)->penduduk_id)->toBe($penduduk->id);
+});
+
+it('rollback dan tidak menghapus apa pun ketika delete gagal karena constraint', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+    User::factory()->create(['role' => 'perangkat_desa']);
+    $target = User::factory()->create(['role' => 'perangkat_desa']);
+
+    Penduduk::factory()->create(['user_id' => $target->id]);
+
+    DB::table('sessions')->insert([
+        'id' => 'session-rollback-target',
+        'user_id' => $target->id,
+        'ip_address' => '127.0.0.1',
+        'user_agent' => 'PHPUnit',
+        'payload' => base64_encode('payload'),
+        'last_activity' => time(),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee('Akun pengguna gagal dihapus. Silakan coba lagi.');
+
+    expect(User::find($target->id))->not->toBeNull()
+        ->and(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(1);
 });

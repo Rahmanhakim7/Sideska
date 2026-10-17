@@ -562,6 +562,32 @@
                 </div>
             </form>
         </div>
+
+        @if (in_array($user->role, ['perangkat_desa', 'kepala_desa'], true))
+            {{-- HAPUS AKUN --}}
+            <div class="overflow-hidden rounded-xl border border-red-200 bg-white shadow-sm">
+                <div class="border-b border-red-100 px-6 py-4">
+                    <h2 class="text-base font-bold text-slate-800">
+                        Hapus Akun
+                    </h2>
+                    <p class="mt-0.5 text-sm text-slate-500">
+                        Hapus akun {{ $roleLabel }} ini secara permanen. Histori administrasi
+                        (surat dan mutasi) tetap dipertahankan.
+                    </p>
+                </div>
+
+                <form wire:submit="hapus"
+                    wire:confirm="Yakin ingin menghapus akun {{ $user->name }} dengan role {{ $roleLabel }}? Akun akan dihapus secara permanen dan tindakan ini tidak dapat dibatalkan. Histori administrasi tetap dipertahankan."
+                    class="px-6 py-6">
+                    <div class="flex justify-end">
+                        <button type="submit" wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+                            Hapus Akun
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @endif
     @endif
 
     {{-- FOOTER ACTION --}}

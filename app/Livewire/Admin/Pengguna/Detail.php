@@ -156,6 +156,99 @@ class Detail extends Component
         }
     }
 
+    public function hapus()
+    {
+        $pelaku = Auth::user();
+
+        if ($pelaku === null || $pelaku->role !== 'admin') {
+            session()->flash(
+                'error',
+                'Anda tidak memiliki akses untuk melakukan tindakan ini.'
+            );
+
+            return;
+        }
+
+        if (Auth::id() === $this->user->id) {
+            session()->flash(
+                'error',
+                'Anda tidak dapat menghapus akun Anda sendiri.'
+            );
+
+            return;
+        }
+
+        if (! in_array($this->user->role, ['perangkat_desa', 'kepala_desa'], true)) {
+            session()->flash(
+                'error',
+                'Akun dengan role ini tidak dapat dihapus melalui halaman ini.'
+            );
+
+            return;
+        }
+
+        if (
+            $this->user->role === 'perangkat_desa'
+            && User::where('role', 'perangkat_desa')->count() <= 1
+        ) {
+            session()->flash(
+                'error',
+                'Akun Perangkat Desa terakhir tidak dapat dihapus.'
+            );
+
+            return;
+        }
+
+        if (
+            $this->user->role === 'kepala_desa'
+            && User::where('role', 'kepala_desa')->count() <= 1
+        ) {
+            session()->flash(
+                'error',
+                'Akun Kepala Desa terakhir tidak dapat dihapus.'
+            );
+
+            return;
+        }
+
+        try {
+            DB::transaction(function () {
+                DB::table('sessions')
+                    ->where('user_id', $this->user->id)
+                    ->delete();
+
+                DB::table('password_reset_tokens')
+                    ->where('email', $this->user->email)
+                    ->delete();
+
+                DB::table('notifications')
+                    ->where('notifiable_type', User::class)
+                    ->where('notifiable_id', $this->user->id)
+                    ->delete();
+
+                $this->user->delete();
+            });
+
+            session()->flash(
+                'success',
+                'Akun pengguna berhasil dihapus.'
+            );
+
+            return $this->redirectRoute(
+                'admin.pengguna',
+                navigate: true
+            );
+        } catch (\Throwable $e) {
+            report($e);
+            session()->flash(
+                'error',
+                'Akun pengguna gagal dihapus. Silakan coba lagi.'
+            );
+
+            return null;
+        }
+    }
+
     public function render()
     {
         return view('livewire.admin.pengguna.detail');
