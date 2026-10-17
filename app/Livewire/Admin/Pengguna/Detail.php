@@ -222,32 +222,23 @@ class Detail extends Component
             return;
         }
 
-        if (
-            $this->user->role === 'perangkat_desa'
-            && User::where('role', 'perangkat_desa')->count() <= 1
-        ) {
-            session()->flash(
-                'error',
-                'Akun Perangkat Desa terakhir tidak dapat dihapus.'
-            );
-
-            return;
-        }
-
-        if (
-            $this->user->role === 'kepala_desa'
-            && User::where('role', 'kepala_desa')->count() <= 1
-        ) {
-            session()->flash(
-                'error',
-                'Akun Kepala Desa terakhir tidak dapat dihapus.'
-            );
-
-            return;
-        }
+        $pesanDitolak = null;
 
         try {
-            DB::transaction(function () use ($pelaku) {
+            DB::transaction(function () use ($pelaku, &$pesanDitolak) {
+                $jumlahSebelumHapus = User::where('role', $this->user->role)
+                    ->lockForUpdate()
+                    ->get(['id'])
+                    ->count();
+
+                if ($jumlahSebelumHapus <= 1) {
+                    $pesanDitolak = $this->user->role === 'perangkat_desa'
+                        ? 'Akun Perangkat Desa terakhir tidak dapat dihapus.'
+                        : 'Akun Kepala Desa terakhir tidak dapat dihapus.';
+
+                    return;
+                }
+
                 DB::table('sessions')
                     ->where('user_id', $this->user->id)
                     ->delete();
@@ -271,16 +262,6 @@ class Detail extends Component
 
                 $this->user->delete();
             });
-
-            session()->flash(
-                'success',
-                'Akun pengguna berhasil dihapus.'
-            );
-
-            return $this->redirectRoute(
-                'admin.pengguna',
-                navigate: true
-            );
         } catch (\Throwable $e) {
             report($e);
             session()->flash(
@@ -290,6 +271,22 @@ class Detail extends Component
 
             return null;
         }
+
+        if ($pesanDitolak !== null) {
+            session()->flash('error', $pesanDitolak);
+
+            return null;
+        }
+
+        session()->flash(
+            'success',
+            'Akun pengguna berhasil dihapus.'
+        );
+
+        return $this->redirectRoute(
+            'admin.pengguna',
+            navigate: true
+        );
     }
 
     public function render()

@@ -22,6 +22,18 @@
             <span>{{ session('success') }}</span>
         </div>
     @endif
+    @if (session()->has('error'))
+        <div
+            class="mb-6 flex items-start gap-3 rounded-xl border border-red-200
+                   bg-red-50 px-4 py-3 text-sm text-red-700">
+            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
     <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
         <div class="flex items-center">
             <div class="flex flex-1 items-center">

@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Pengguna;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -61,6 +62,17 @@ class CreateKepalaDesa extends Component
 
     public function simpan()
     {
+        $pelaku = Auth::user();
+
+        if ($pelaku === null || $pelaku->role !== 'admin') {
+            session()->flash(
+                'error',
+                'Anda tidak memiliki akses untuk melakukan tindakan ini.'
+            );
+
+            return null;
+        }
+
         $this->validate();
 
         try {

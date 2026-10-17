@@ -5,6 +5,7 @@ use App\Livewire\Admin\Pengguna\CreateMasyarakat;
 use App\Livewire\Admin\Pengguna\CreatePerangkatDesa;
 use App\Livewire\Admin\Pengguna\Detail;
 use App\Livewire\Admin\Pengguna\Index;
+use App\Models\AuditLog;
 use App\Models\MutasiPenduduk;
 use App\Models\Penduduk;
 use App\Models\PengajuanStatusHistory;
@@ -2068,3 +2069,76 @@ it('rollback dan tidak menghapus apa pun ketika delete gagal karena constraint',
     expect(User::find($target->id))->not->toBeNull()
         ->and(DB::table('sessions')->where('user_id', $target->id)->count())->toBe(1);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Admin Pengguna — Hardening
+|--------------------------------------------------------------------------
+*/
+
+it('menolak simpan pembuatan masyarakat yang dipanggil langsung untuk role selain admin', function (string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+
+    $payload = adminPayloadMasyarakat([
+        'email' => 'selundupan.warga.'.$role.'@contoh.test',
+    ]);
+
+    $component = Livewire::actingAs($pelaku)->test(CreateMasyarakat::class);
+
+    foreach ($payload as $key => $value) {
+        $component->set($key, $value);
+    }
+
+    $component->call('simpan')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect(User::where('email', $payload['email'])->exists())->toBeFalse()
+        ->and(Penduduk::where('nik', $payload['nik'])->exists())->toBeFalse();
+})->with(['perangkat_desa', 'kepala_desa', 'masyarakat']);
+
+it('menolak simpan pembuatan akun sederhana yang dipanggil langsung untuk role selain admin', function (string $component, string $role) {
+    $pelaku = User::factory()->create(['role' => $role]);
+    $email = 'selundupan.'.$role.'@contoh.test';
+
+    Livewire::actingAs($pelaku)
+        ->test($component)
+        ->set('name', 'Akun Selundupan')
+        ->set('email', $email)
+        ->set('password', 'rahasia123')
+        ->set('password_confirmation', 'rahasia123')
+        ->call('simpan')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect(User::where('email', $email)->exists())->toBeFalse();
+})->with([
+    'perangkat desa' => [CreatePerangkatDesa::class, 'perangkat_desa'],
+    'kepala desa' => [CreateKepalaDesa::class, 'kepala_desa'],
+]);
+
+it('menolak simpan pembuatan pengguna ketika tidak ada pengguna terautentikasi', function (string $component) {
+    Livewire::test($component)
+        ->call('simpan')
+        ->assertSee('Anda tidak memiliki akses untuk melakukan tindakan ini.');
+
+    expect(User::count())->toBe(0);
+})->with([
+    'masyarakat' => [CreateMasyarakat::class],
+    'perangkat desa' => [CreatePerangkatDesa::class],
+    'kepala desa' => [CreateKepalaDesa::class],
+]);
+
+it('tidak mencatat audit log ketika penghapusan akun terakhir ditolak', function (string $role, string $pesan) {
+    $admin = User::factory()->create(['role' => 'admin']);
+    $target = User::factory()->create(['role' => $role]);
+
+    Livewire::actingAs($admin)
+        ->test(Detail::class, ['user' => $target])
+        ->call('hapus')
+        ->assertSee($pesan);
+
+    expect(User::find($target->id))->not->toBeNull()
+        ->and(AuditLog::count())->toBe(0);
+})->with([
+    'perangkat desa terakhir' => ['perangkat_desa', 'Akun Perangkat Desa terakhir tidak dapat dihapus.'],
+    'kepala desa terakhir' => ['kepala_desa', 'Akun Kepala Desa terakhir tidak dapat dihapus.'],
+]);

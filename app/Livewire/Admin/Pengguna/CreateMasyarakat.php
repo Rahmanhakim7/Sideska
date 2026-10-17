@@ -6,6 +6,7 @@ use App\Enums\StatusKependudukan;
 use App\Models\Penduduk;
 use App\Models\User;
 use App\Services\PendudukFotoService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -278,6 +279,17 @@ class CreateMasyarakat extends Component
 
     public function simpan()
     {
+        $pelaku = Auth::user();
+
+        if ($pelaku === null || $pelaku->role !== 'admin') {
+            session()->flash(
+                'error',
+                'Anda tidak memiliki akses untuk melakukan tindakan ini.'
+            );
+
+            return null;
+        }
+
         $this->validate();
         $fotoPath = null;
 
